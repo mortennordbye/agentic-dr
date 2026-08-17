@@ -283,6 +283,9 @@ const NODES=[
   // the orchestrator - thin control plane (cy 545)
   {id:'orchestrator',x:855,y:513,w:300,h:64,tier:'sys', icon:'gear', t:'dr-build.js · Orchestrator', sub:'fans out Builders · owns DAG · blackboard · apply order'},
 
+  // the isolation guarantee - not a step, a property of the environment every cloud step runs in
+  {id:'isolation',x:2395,y:158,w:300,h:82,tier:'ext', icon:'shield', t:'DR-only identity', sub:'no role on the source subscriptions · a wrong apply is denied by the cloud', pill:'§1'},
+
   // human gate markers on the pipeline triggers (cy 550)
   {id:'plangate', x:2425,y:518,w:165,h:72,tier:'pri', gate:true, icon:'shield', t:'Plan gate', sub:'approve plan run'},
   {id:'applygate',x:3005,y:518,w:165,h:72,tier:'pri', gate:true, icon:'shield', t:'Apply gate', sub:'per-tier approval'},
@@ -320,7 +323,7 @@ const EDGES=[
   ['p2','orchestrator','runs','flow'],
   ['orchestrator','builder','spawns ×N','flow'],
   ['profile','builder','transform rules','read',{lane:822,lo:[0,42]}],
-  ['prod','builder','reads (truth)','read',{lane:834,lo:[0,-26]}],
+  ['prod','builder','read-only','read',{lane:834,lo:[0,-26]}],
   ['connectivity','builder','','read',{lane:846}],
   ['builder','drroot','writes','write'],
   ['builder','manifests','writes 1 per component','write'],
@@ -339,6 +342,8 @@ const EDGES=[
   ['gitops','gitopsdr','writes','write'],
   ['pg','handoff','roots + order + overlay','flow'],
   ['handoff','p4','','flow'],
+
+  ['isolation','pipeline','authenticates as','read',{lane:2365,lo:[0,-84]}],
 
   ['p4','plangate','','flow'],
   ['plangate','pipeline','run plan','gate'],
@@ -483,6 +488,11 @@ const D={
   handoff:{k:'Hand-off · §8',i:'swap',io:['workflow → main loop'],h:`
     <p>The boundary between the two execution surfaces. Into the autonomous Workflow went the approved build plan, the in-scope list, and the source-to-target map. Out of it come the generated DR roots, the manifests, and the computed apply order.</p>
     <p>From here on every step touches the cloud, runs interactively, and is gated.</p>`},
+
+  isolation:{k:'Blast-radius isolation · §1',i:'shield',io:['does not depend on the agents'],h:`
+    <p>The guarantee that holds even if an agent is confused or an approval is rubber-stamped. The DR pipeline authenticates with a <b>DR-only identity that holds no role on the source subscriptions</b>, so a malformed apply is denied by the cloud rather than reaching production. Nothing about that depends on the agents behaving.</p>
+    <p>It is one of four independent levels. <b>Identity</b>, here. <b>State</b>: DR state lives only in the DR workspaces. <b>Pipeline</b>: agents trigger only the DR pipeline. <b>Write path</b>: Builders write only under the DR output tree, with one recorded exception — the Orchestrator regenerates the DR pipeline's own job stanzas from the computed apply order.</p>
+    <p>Which is why every arrow out of the source roots on this diagram is read-only, and no arrow points back at them. DR is a failover, not a migration: the source estate keeps running, untouched, so traffic can route back when it recovers.</p>`},
 
   p4:{k:'Step 4 · main loop · §8 Phase 4, §6.3, §10',i:'clipboard',io:['gated','plan_only=true'],h:`
     <p>Approval gate, then trigger the DR pipeline with <code>plan_only=true</code> in dependency order, as far as a cold region allows. A human reviews each plan, which is the real semantic check.</p>
@@ -761,6 +771,8 @@ const SIM=[
    cap:'Then it checks its own work. A search for any surviving production token fails the build outright. Anything it genuinely cannot know yet is marked instead of guessed: POST-APPLY placeholders for values that only exist once the DR cluster and disks are created, and one DECIDE item (the on-prem allow-list) that a human has to confirm. Both are settled in the skill, with a person present, before anything is committed.'},
   {t:'Hand-off', nodes:['handoff'], edges:[['pg','handoff'],['handoff','p4']],
    cap:'Hand-off. The generated roots, manifests, apply order, and the GitOps overlay cross from the autonomous workflow back to the interactive main loop. From here every step touches the cloud and is gated.'},
+  {t:'Isolation · why a wrong apply is safe', nodes:['isolation','pipeline'], edges:[['isolation','pipeline']],
+   cap:'Before any of it reaches the cloud, the guarantee that does not depend on the agents behaving. The DR pipeline authenticates with a DR-only identity holding no role on the source subscriptions, so even a malformed apply is denied by the cloud rather than reaching production. That is one of four independent levels: identity here, DR-only state workspaces, agents triggering only the DR pipeline, and Builders writing only under the DR output tree. It is why every arrow out of the source roots is read-only and none points back.'},
   {t:'Gate · Plan', nodes:['p4','plangate','pipeline'], edges:[['p4','plangate'],['plangate','pipeline']], gate:true,
    cap:'Human gate, Phase 4. Trigger the DR pipeline with plan_only=true in dependency order. A human reading each plan is the real check; the lint is only a tripwire.'},
   {t:'Phase 4 · Plan output', nodes:['pipeline','ghlogs'], edges:[['pipeline','ghlogs']],
