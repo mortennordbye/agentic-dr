@@ -46,9 +46,11 @@ EXTRACT	\b(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]|[0-9])(\.(25[0-5]|2[0-4][0-9
 # `w3.org` in the bundled diagram are a JavaScript property access and a spec URL, and there is no
 # shape that separates those from a real corporate domain. A bare company domain is the private
 # supplementary list's job, not this one.
-# Allowed: RFC 2606 example domains, the fictional example estate's domain, and the handful of real
-# infrastructure domains this project legitimately documents.
-EXTRACT	[a-z0-9][a-z0-9-]*(\.[a-z0-9][a-z0-9-]*)+\.(no|se|cloud|net|io|dev|org|internal|local|com)\b	^(example\.(com|net|org)|.*\.example\.(com|net|org)|.*\.contoso\.(cloud|net)|registry\.terraform\.io|app\.terraform\.io|code\.claude\.com|docs\.claude\.com|json-schema\.org|www\.apache\.org|www\.w3\.org)	a multi-label hostname outside the documented example and reference set
+# Allowed: RFC 2606 example domains, the fictional example estate's domain, the handful of real
+# infrastructure domains this project legitimately documents, and this repo's own badge and
+# Pages hosts. Those last four are the shape this gate is built to reject, which is the point:
+# they are allowed by name, one entry each, rather than by widening the pattern.
+EXTRACT	[a-z0-9][a-z0-9-]*(\.[a-z0-9][a-z0-9-]*)+\.(no|se|cloud|net|io|dev|org|internal|local|com)\b	^(example\.(com|net|org)|.*\.example\.(com|net|org)|.*\.contoso\.(cloud|net)|registry\.terraform\.io|app\.terraform\.io|code\.claude\.com|docs\.claude\.com|json-schema\.org|www\.apache\.org|www\.w3\.org|img\.shields\.io|api\.star-history\.com|www\.star-history\.com|api\.securityscorecards\.dev|mortennordbye\.github\.io)	a multi-label hostname outside the documented example and reference set
 
 # --- Note ------------------------------------------------------------------------------------------------
 # There is deliberately no check here for hardcoded paths from the estate this framework was

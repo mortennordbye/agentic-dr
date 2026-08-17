@@ -1,10 +1,19 @@
-# Agentic DR
+<div align="center">
 
-**Generate your disaster-recovery infrastructure on the day you need it, from the production code you
-already maintain.**
+# 🌥️ Agentic DR
+
+### Generate your disaster-recovery infrastructure on the day you need it, from the production code you already maintain.
+
+![Terraform](https://img.shields.io/badge/Terraform-844FBA?logo=terraform&logoColor=white) ![Azure](https://img.shields.io/badge/Azure-0078D4?logo=microsoftazure&logoColor=white) [![Claude Code](https://img.shields.io/badge/Claude%20Code-D97757?logo=anthropic&logoColor=white)](https://code.claude.com) ![Node.js](https://img.shields.io/badge/Node.js-5FA04E?logo=nodedotjs&logoColor=white) ![Bash](https://img.shields.io/badge/Bash-4EAA25?logo=gnubash&logoColor=white)
+
+[![CI](https://github.com/mortennordbye/agentic-dr/actions/workflows/ci.yml/badge.svg)](https://github.com/mortennordbye/agentic-dr/actions/workflows/ci.yml) [![Scorecard](https://api.securityscorecards.dev/projects/github.com/mortennordbye/agentic-dr/badge)](https://scorecard.dev/viewer/?uri=github.com/mortennordbye/agentic-dr)
+
+[![License](https://img.shields.io/github/license/mortennordbye/agentic-dr?style=flat-square)](LICENSE) [![Last Commit](https://img.shields.io/github/last-commit/mortennordbye/agentic-dr?style=flat-square)](https://github.com/mortennordbye/agentic-dr/commits/main) [![Stars](https://img.shields.io/github/stars/mortennordbye/agentic-dr?style=flat-square)](https://github.com/mortennordbye/agentic-dr/stargazers)
 
 Most DR estates are a second copy of production, maintained by hand. That copy rots. Production
 changes, the DR copy does not, and you find out on DR day.
+
+</div>
 
 Agentic DR takes the other position: **do not maintain a standing DR pipeline — regenerate it on
 demand from current `main`.** A generator driven off live production IaC is drift-proof by
@@ -148,6 +157,33 @@ Start with `dry-run`, and run it often. Mode 2 should never be a cold first run 
 - Currently assumes **Terraform on Azure**. The architecture is not Azure-specific, but the lint's
   conditional rules and the example profile are.
 
+## Repository structure
+
+```text
+agentic-dr/
+├── engine/            # the deterministic scripts. No LLM: lint, reconcile, resolve, gitops-rewrite
+├── workflows/         # the Orchestrator, a committed Claude Code Workflow script
+├── agents/            # the three LLM personas: builder, plan validator, remediator
+├── skills/            # the /agentic-dr:dr-build entrypoint and the profile-maintenance skill
+├── docs/              # the profile contract, state-file schemas, rule formats, operating guide
+├── profile.example/   # a complete fictional profile — the only per-estate layer
+├── fixtures/          # what makes the deterministic half verifiable standalone
+└── tools/             # the test suite and the release gate
+```
+
+---
+
+## Workflows
+
+| Workflow | Trigger | Purpose |
+| -------- | ------- | ------- |
+| CI | push, PR | `tools/test.sh` (57 checks, both scrub-gate modes) and a blocking shellcheck |
+| Dependency Review | PR | block a pull request that swaps in a vulnerable action version |
+| Scorecard | push, weekly | OpenSSF supply-chain grade, published to the Security tab |
+| Release Please | push to `main` | releases and a changelog from Conventional Commits |
+
+---
+
 ## Documentation
 
 | Document | What |
@@ -159,7 +195,7 @@ Start with `dry-run`, and run it often. Mode 2 should never be a cold first run 
 | [`docs/lint-patterns-format.md`](docs/lint-patterns-format.md) | The invariant lint's input format. |
 | [`docs/gitops-substitutions-schema.md`](docs/gitops-substitutions-schema.md) | The GitOps overlay rewriter's rule set. |
 | [`docs/scrub-gate.md`](docs/scrub-gate.md) | This repo's own release gate. |
-| [`docs/agentic-dr-build-diagram.html`](docs/agentic-dr-build-diagram.html) | An interactive walkthrough of a full run. |
+| [Build walkthrough](https://mortennordbye.github.io/agentic-dr/) | An interactive walkthrough of a full run, served from `docs/`. |
 
 ## Status
 
@@ -170,3 +206,21 @@ unproven-under-fire and read every plan.
 ## License
 
 Apache-2.0. See [`LICENSE`](LICENSE).
+
+---
+
+<div align="center">
+
+### ⭐ Star this repo if you find it useful ⭐
+
+<a href="https://www.star-history.com/#mortennordbye/agentic-dr&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=mortennordbye/agentic-dr&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=mortennordbye/agentic-dr&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=mortennordbye/agentic-dr&type=Date" width="600" />
+  </picture>
+</a>
+
+Made by [Morten Victor Nordbye](https://github.com/mortennordbye)
+
+</div>
