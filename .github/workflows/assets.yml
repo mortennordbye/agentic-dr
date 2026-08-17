@@ -47,6 +47,12 @@ jobs:
           rsvg-convert -w 64  -h 64  assets/icon.svg -o docs/favicon.png
           ls -l assets/icon.png docs/favicon.png
 
+      # Staged before comparing on purpose: a raster that does not exist yet is untracked, and
+      # `git diff` does not see untracked files. Comparing the worktree would report "no change"
+      # on the very first render and quietly produce nothing.
+      - name: Stage the rasters
+        run: git add --intent-to-add assets/icon.png docs/favicon.png
+
       - name: Fail on drift (pull requests)
         if: github.event_name == 'pull_request'
         run: |
