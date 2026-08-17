@@ -17,16 +17,27 @@ There is a second reason. Every run pins the commit of the repo it is invoked in
 whole estate from it. Run it here and it pins *the plugin's* commit, which is meaningless — the
 pinned SHA is supposed to identify the state of an estate.
 
-`try.sh` does the copying, and the initial commit that discovery needs:
+`try.sh` does the copying and the initial commit that discovery needs, then walks you through the
+estate one step at a time:
 
 ```bash
 bash demo/try.sh                 # → ~/agentic-dr-demo
 bash demo/try.sh /some/where     # or wherever you like
+bash demo/try.sh --yes           # set it up and print the commands, no prompts
 ```
 
-It refuses to write into a directory that already has anything in it, so a second run cannot discard
-a build you wanted to keep. It prints the commands to run next, with the plugin path already filled
-in. By hand it is the same four steps:
+It pauses before each step, which is the point when you are demonstrating this to a room: run the
+lint, talk over the output, press enter for the next one. Each prompt takes enter to run, `s` to
+skip, `q` to stop. The last step offers to launch Claude Code in the estate for a full build, and
+defaults to no, because that one spawns agents and takes minutes.
+
+With no terminal attached — piped, or under `--yes` — it sets the estate up, prints the commands and
+exits, so it stays usable from a script.
+
+It will not write into a directory that already has anything in it without asking, so a second run
+cannot quietly discard a build you wanted to keep.
+
+By hand it is the same four steps:
 
 ```bash
 cp -R demo ~/agentic-dr-demo && cd ~/agentic-dr-demo
