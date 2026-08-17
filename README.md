@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🌥️ Agentic DR
+<img src="assets/icon.png" alt="" width="84">
+
+# Agentic DR
 
 ### Generate your disaster-recovery infrastructure on the day you need it, from the production code you already maintain.
 
