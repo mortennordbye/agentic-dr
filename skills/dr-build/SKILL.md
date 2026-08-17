@@ -170,13 +170,13 @@ the residue it can't decide autonomously:
   would sync a manifest that fails to authenticate (or trusts the wrong sources) on the DR cluster.
   A non-empty result **blocks the commit** until resolved.
 
-For **`/dr-build dry-run`**, you may stop here, or escalate to a gated drift check: **[GATE]** ask
+For **`/agentic-dr:dr-build dry-run`**, you may stop here, or escalate to a gated drift check: **[GATE]** ask
 before `gh workflow run <DR pipeline> -f plan_only=true ...`, in dependency order, as far as a cold
 region allows (cold plan-only is partial by design, §6.3). No apply, ever, in Mode 1.
 
 ---
 
-## Phase 4–6 — failover plan / apply / triage (`/dr-build failover`, gated)
+## Phase 4–6 — failover plan / apply / triage (`/agentic-dr:dr-build failover`, gated)
 
 Run in the main loop, tier by tier, in the order from `dependency-graph.md`. The Workflow can't pause
 for approvals — you carry the gates.
@@ -191,7 +191,7 @@ for approvals — you carry the gates.
     Workflow for that one root (resumable), re-plan.
   - `route_to: orchestrator` (`missing-upstream`) → fix apply order, not code; re-plan the tier.
   - `route_to: human` / `escalate_to_mode3: true` (`quota`, `prereq`, `region-capability`) → surface to
-    the engineer; a region-parity / "won't come up" failure goes to **Mode 3** (`/dr-build fix`).
+    the engineer; a region-parity / "won't come up" failure goes to **Mode 3** (`/agentic-dr:dr-build fix`).
 - **Phase 6 — Apply (staged, failover only).** **[GATE per tier]** Only after explicit approval, flip
   `plan_only=false` for that tier (the `dr` Environment's required-reviewers gate it again
   server-side). Tier order: hub/firewall → DNS → network-dependent workloads → the rest. After each
@@ -206,7 +206,7 @@ Resumability: if a session dies mid-apply, recovery does not depend on it — th
 
 ---
 
-## Mode 3 — adaptive remediation (`/dr-build fix <service>`)
+## Mode 3 — adaptive remediation (`/agentic-dr:dr-build fix <service>`)
 
 Not regeneration — problem-solving against **one** failing service (a region-parity gap or a
 misbehaving managed service). Spawn the **`agentic-dr:dr-dynamic-remediator`** agent with the failure + the
@@ -235,5 +235,5 @@ the mechanical `transform-rules.md` (§16.10). Human-reviewed, never auto-merged
 ## Not in scope for this skill
 
 Cutover (routing live traffic to DR) and failback are **customer-driven routing steps**, never the
-agent fan-out (ARCHITECTURE §1, §17). DR cleanup is a future `/dr-build cleanup`. Data restore is the
+agent fan-out (ARCHITECTURE §1, §17). DR cleanup is a future `/agentic-dr:dr-build cleanup`. Data restore is the
 customer's data plane (§1).

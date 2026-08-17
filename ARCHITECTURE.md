@@ -5,7 +5,7 @@
 > the committed invariant lint (`lint.sh` + `profile/lint-patterns.txt`) and second oracle
 > (`reconcile.mjs`), the Orchestrator (`workflows/dr-build.js`) with its Phase-3 resolver (`resolve.mjs`) and
 > its GitOps overlay rewriter (`gitops-rewrite.mjs` + `profile/gitops-substitutions.json`, §16.15),
-> the `/dr-build` skill (Modes 1–3 routing + gates), and the Mode-3 persona
+> the `/agentic-dr:dr-build` skill (Modes 1–3 routing + gates), and the Mode-3 persona
 > (`agents/dr-dynamic-remediator.md`) with its `profile/region-gaps.md` write-back target —
 > alongside the two original personas (`dr-component-builder.md`, `dr-plan-validator.md`) and the
 > per-customer **profile** (`profile/`). What remains is exercising it end-to-end (a first Mode-1
@@ -178,9 +178,9 @@ this repo and invokes one skill.
 
 ### 2.1 Invocation — a committed skill
 
-- `/dr-build dry-run` → Mode 1 (generate + lint + validate; optionally plan-only)
-- `/dr-build failover` → Mode 2 (generate → gated plan → gated apply → troubleshoot)
-- `/dr-build fix <service>` → Mode 3 (adaptive remediation of one service)
+- `/agentic-dr:dr-build dry-run` → Mode 1 (generate + lint + validate; optionally plan-only)
+- `/agentic-dr:dr-build failover` → Mode 2 (generate → gated plan → gated apply → troubleshoot)
+- `/agentic-dr:dr-build fix <service>` → Mode 3 (adaptive remediation of one service)
 
 The skill carries the gating discipline: **stop and ask before any `gh workflow run`.** Mode 2 is
 triggered by the customer's DR process (`profile/process.md`), never on a hunch; the protected
@@ -224,7 +224,7 @@ Terraform is Mode 1's `fmt`/`validate` — config-only, no backend, no cloud.
 
 Every Mode 1/2 run opens with the **build-plan gate** (§8.1). Cutover (stage 3) and failback
 (stage 4) are **not** agent modes — they are customer-driven routing steps (§1, §17); cleanup
-(stage 5) is a future `/dr-build cleanup`.
+(stage 5) is a future `/agentic-dr:dr-build cleanup`.
 
 ---
 
@@ -404,7 +404,7 @@ apply order, and owns the blackboard.
 
 | Role | Count | Responsibility |
 | ---- | ----- | -------------- |
-| **Orchestrator** (`workflows/dr-build.js` + the `/dr-build` skill, §2.2) | 1 | Owns the run: discovers the in-scope roots from the repo (minus `profile/scope-rules.md` exclusions), fans out Builders, assembles the DAG from manifests, detects cycles, computes apply order, maintains `status.json` + `blackboard.md` + `dependency-graph.md`, triggers plan validation, routes errors back, surfaces the prerequisite checklist, pauses at every gate. |
+| **Orchestrator** (`workflows/dr-build.js` + the `/agentic-dr:dr-build` skill, §2.2) | 1 | Owns the run: discovers the in-scope roots from the repo (minus `profile/scope-rules.md` exclusions), fans out Builders, assembles the DAG from manifests, detects cycles, computes apply order, maintains `status.json` + `blackboard.md` + `dependency-graph.md`, triggers plan validation, routes errors back, surfaces the prerequisite checklist, pauses at every gate. |
 | **Component Builder** | 1 per in-scope component | Reads its source root + `profile/transform-rules.md` + the relevant module `variables.tf`. Emits the DR root (`providers.tf`, `main.tf`, `variables.tf`, DR var-file), applies the transform semantically, rewrites `data`-lookup target names to DR, returns its manifest (§6). Logs anything it can't resolve to the blackboard rather than guessing. |
 | **Plan Validator** | as needed | Reads `gh run` plan *and* apply output, classifies the failure (category set in its persona contract), returns a structured verdict the Orchestrator routes to the owning Builder — or escalates to Mode 3 when the failure is a region-parity / "won't come up" problem. |
 | **Invariant Linter** | mechanical | Not an LLM — a grep pass (§11). Runs after every Builder, before any plan. Fails the component on source-estate leakage. |
@@ -421,7 +421,7 @@ Agent behaviour is **committed and versioned**, not hand-written per run:
   inventory — scope *inclusions* are discovered, never listed (§12).
 
 The **Orchestrator is not an agent file** — it is the `workflows/dr-build.js` script body plus the
-`/dr-build` skill (§2). Mode 3's agent is defined when Mode 3 is built (§16.7).
+`/agentic-dr:dr-build` skill (§2). Mode 3's agent is defined when Mode 3 is built (§16.7).
 
 ---
 
@@ -672,7 +672,7 @@ agentic-dr/
 │   ├── reconcile.mjs       # second oracle (§11) — manifest↔HCL flag-don't-guess reconciliation
 │   ├── resolve.mjs         # Phase-3 resolver (§8) — DAG, apply order, state files, DR pipeline job stanzas (§16.12)
 │   └── gitops-rewrite.mjs  # GitOps overlay rewriter (§8 Phase G, §16.15) — copies the profile's GitOps source_dir into its target_dir, substituting; reads profile/gitops-substitutions.json
-├── skills/dr-build/        # the /dr-build entrypoint + mode routing + approval discipline
+├── skills/dr-build/        # the /agentic-dr:dr-build entrypoint + mode routing + approval discipline
 ├── skills/update-dr-profile/  # the profile-maintenance skill
 ├── agents/                 # dr-component-builder (§2.2, §7) · dr-plan-validator · dr-dynamic-remediator (§3, §16.7)
 ├── docs/                   # the profile contract, the state-file schemas, the two rule-file formats, the operating guide
@@ -759,7 +759,7 @@ entry records the decision + rationale; the mechanics live in the body section i
    Runs happen on a branch: generate → human review → optionally a plan-only pipeline run with
    explicit approval. Nothing larger.
 5. **Build order of the system itself (LOCKED).** Profile guardrails → invariant lint →
-   the Orchestrator → the `/dr-build` skill, validating each on the Phase-1 roots as a known-good
+   the Orchestrator → the `/agentic-dr:dr-build` skill, validating each on the Phase-1 roots as a known-good
    fixture.
 6. **Dynamic-mode scope (LOCKED — generic, file-driven).** Customer-agnostic, driven by the
    `profile/` files — no customer-specific hardcoding; the profile scopes it to DR for the first
@@ -849,7 +849,7 @@ is read-as-truth and **never mutated** at any stage (§1).
 5. **Clean up DR — agents, DR-scoped, explicit.** Tear down the expensive Phase-2 resources,
    keeping Phase-1 per the cold-standby posture. **The only `destroy` the agents ever perform, and
    all four §1 isolation levels still apply.** A separate, fully-gated invocation (a future
-   `/dr-build cleanup`), never part of a build run.
+   `/agentic-dr:dr-build cleanup`), never part of a build run.
 
 > The hazard this lifecycle prevents — an agent "getting confused" mid-failover and mutating live
 > source resources — is made structurally impossible by §1's four isolation levels; the

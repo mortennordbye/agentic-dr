@@ -8,7 +8,7 @@ The build is **one phase** of a larger process the customer owns:
 | Phase | Owner | What |
 | ----- | ----- | ---- |
 | P1 Declare disaster | Customer | The decision to fail over. Nothing here runs before it. |
-| P2 Build regional core infrastructure | **Platform team (this build)** | `/dr-build failover` |
+| P2 Build regional core infrastructure | **Platform team (this build)** | `/agentic-dr:dr-build failover` |
 | P3 Restore data | Customer | Databases, storage, messaging. Generated empty by design. |
 | P4 Deploy applications | Customer | Including re-annotating workloads with the new DR identity client ids the build reports. |
 | P5 Cutover & validate | Customer | Traffic routing. Never an agent action. |

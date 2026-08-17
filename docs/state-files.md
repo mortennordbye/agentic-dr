@@ -2,7 +2,7 @@
 
 Run artifacts for the agentic DR build (ARCHITECTURE §9). The Workflow script has no filesystem
 access, so these are written by the committed helper scripts (`../lint.sh`, `../reconcile.mjs`,
-`../resolve.mjs`) run via the thin exec agent (§16.13), and by the `/dr-build` skill in the main loop.
+`../resolve.mjs`) run via the thin exec agent (§16.13), and by the `/agentic-dr:dr-build` skill in the main loop.
 
 ## Files
 

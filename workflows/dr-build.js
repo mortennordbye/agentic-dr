@@ -16,7 +16,7 @@ export const meta = {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Input (from the /dr-build skill, which runs Phase-1 discovery + the build-plan gate in the main
+// Input (from the /agentic-dr:dr-build skill, which runs Phase-1 discovery + the build-plan gate in the main
 // loop and pins the main SHA — ARCHITECTURE §8, §16.13). The Workflow script has no filesystem
 // access, so every deterministic file operation (lint, reconcile, graph, state writes, pipeline
 // emit) runs inside a thin exec agent that execs a committed script; the determinism lives in the
@@ -40,14 +40,14 @@ if (!sha || typeof sha !== 'string') {
   throw new Error('dr-build.js: args.sha (the pinned main SHA) is required — the skill pins it on invocation (ARCHITECTURE §4).')
 }
 if (!Array.isArray(inScope) || inScope.length === 0) {
-  throw new Error('dr-build.js: args.inScope must be a non-empty array of {component, source_root, target_root, tfc_workspace} — discovery + the build plan run in the /dr-build skill and pass it in (ARCHITECTURE §8, §16.13).')
+  throw new Error('dr-build.js: args.inScope must be a non-empty array of {component, source_root, target_root, tfc_workspace} — discovery + the build plan run in the /agentic-dr:dr-build skill and pass it in (ARCHITECTURE §8, §16.13).')
 }
 
 if (!enginePath || typeof enginePath !== 'string') {
   // No default: the engine ships with the plugin and the estate has no copy of it, so guessing a
   // path here would fan out every Builder and only fail at the check stage, with a confusing
   // "no such file" from an exec agent. The skill fills this in from ${CLAUDE_PLUGIN_ROOT}.
-  throw new Error('dr-build.js: args.engine (absolute path to the plugin engine dir) is required — the /dr-build skill passes ${CLAUDE_PLUGIN_ROOT}/engine (ARCHITECTURE §16.13).')
+  throw new Error('dr-build.js: args.engine (absolute path to the plugin engine dir) is required — the /agentic-dr:dr-build skill passes ${CLAUDE_PLUGIN_ROOT}/engine (ARCHITECTURE §16.13).')
 }
 
 const AGENTIC = agenticDir || 'agentic-dr'
@@ -298,7 +298,7 @@ if (resolve && resolve.cycles && resolve.cycles.length) {
 // --- Phase: GitOps — regenerate the platform/core GitOps overlay (committed rewriter) -------------
 // The mechanical, deterministic part runs here (autonomous): copy + AUTO substitutions + sentinels +
 // completeness guard. The interactive part — confirming AUTO, prompting the DECIDE values, and
-// resolving the POST-APPLY sentinels after the DR cluster applies — runs in the /dr-build skill,
+// resolving the POST-APPLY sentinels after the DR cluster applies — runs in the /agentic-dr:dr-build skill,
 // because this Workflow script cannot pause for input (ARCHITECTURE §2.2, §16.15).
 phase('GitOps')
 const gitops = await agent(gitopsPrompt(), {

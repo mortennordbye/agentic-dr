@@ -6,7 +6,7 @@ description: >-
   needing special DR handling, or a decision only a human can make. Produces a scoped diff plus a
   verification run of the invariant lint. Use whenever a change lands (or is about to) under any
   source-root location the profile's repo-map names, when asked to check the DR profile is current,
-  or before a /dr-build run.
+  or before a /agentic-dr:dr-build run.
 ---
 
 # Keep the DR build profile current
@@ -155,7 +155,7 @@ legitimate source-region reference. A pre-staged root that carries a source subs
 primary-region resource id on purpose is not a fixture — running the lint on it proves nothing and
 will read as a failure.
 
-Then run `/dr-build dry-run` and read the build plan's *"will need manual work"* section. A
+Then run `/agentic-dr:dr-build dry-run` and read the build plan's *"will need manual work"* section. A
 `preflight.md` item that never surfaces there, or a `scope-rules.md` exclusion reported as a stale
 exclusion, means the edit did not land where the engine reads it.
 

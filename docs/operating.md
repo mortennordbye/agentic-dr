@@ -98,7 +98,7 @@ The Orchestrator coordinates agents but is itself code, not an agent.
 
 | File | Role |
 | ---- | ---- |
-| `SKILL.md` | The `/dr-build` entrypoint. Runs Phase-1 discovery + the build-plan gate in the main loop, pins the SHA, invokes `workflows/dr-build.js`, and carries the gated plan/apply/triage flow. Holds the approval discipline. |
+| `SKILL.md` | The `/agentic-dr:dr-build` entrypoint. Runs Phase-1 discovery + the build-plan gate in the main loop, pins the SHA, invokes `workflows/dr-build.js`, and carries the gated plan/apply/triage flow. Holds the approval discipline. |
 
 ### Profile — the per-customer bindings (`profile/`)
 
@@ -117,7 +117,7 @@ Written during a run; schemas documented in **`docs/state-files.md`**. Committed
 
 The build's job ends at **"infrastructure up and running."** Data restore is the customer's data plane;
 **traffic cutover and failback are customer-led routing steps**, never the agent fan-out (ARCHITECTURE
-§1, §17). DR cleanup is a future `/dr-build cleanup`.
+§1, §17). DR cleanup is a future `/agentic-dr:dr-build cleanup`.
 
 ## Running it for another customer
 

@@ -263,7 +263,7 @@ const BANDS=[
 // ---- nodes ----  tier: pri|sys|ext · icon or step
 const NODES=[
   // spine - the process, left → right (row cy 438)
-  {id:'start', x:60,  y:400,w:180,h:76,tier:'pri', icon:'terminal', t:'/dr-build', sub:'engineer invokes one skill · pins the main SHA', pill:'entry'},
+  {id:'start', x:60,  y:400,w:180,h:76,tier:'pri', icon:'terminal', t:'/agentic-dr:dr-build', sub:'engineer invokes one skill · pins the main SHA', pill:'entry'},
   {id:'p1',    x:305, y:400,w:210,h:76,tier:'pri', step:1, icon:'search', t:'Discover & plan', sub:'scan source roots → in-scope list → build plan'},
   {id:'gate1', x:560, y:400,w:220,h:76,tier:'pri', gate:true, icon:'shield', t:'Build-plan approval', sub:'approve · amend scope · abort', pill:'gate'},
   {id:'p2',    x:900, y:400,w:210,h:76,tier:'pri', step:2, icon:'spark', t:'Build (fan-out)', sub:'one Builder per component → DR root + manifest'},
@@ -366,9 +366,9 @@ const D={
   start:{k:'Entry point · §2.1, §4',i:'terminal',io:['main loop','pins main SHA'],h:`
     <p>A platform engineer opens Claude Code in this repo and runs one skill. There are three routes:</p>
     <ul>
-      <li><strong>/dr-build dry-run</strong> (Mode 1): generate the DR estate, lint and validate it, optionally run a plan. No apply.</li>
-      <li><strong>/dr-build failover</strong> (Mode 2): generate, then a gated plan, then a gated apply, then troubleshoot failures.</li>
-      <li><strong>/dr-build fix &lt;service&gt;</strong> (Mode 3): adaptive remediation of one failing service.</li>
+      <li><strong>/agentic-dr:dr-build dry-run</strong> (Mode 1): generate the DR estate, lint and validate it, optionally run a plan. No apply.</li>
+      <li><strong>/agentic-dr:dr-build failover</strong> (Mode 2): generate, then a gated plan, then a gated apply, then troubleshoot failures.</li>
+      <li><strong>/agentic-dr:dr-build fix &lt;service&gt;</strong> (Mode 3): adaptive remediation of one failing service.</li>
     </ul>
     <p>The skill stops and asks before any pipeline run. On invocation it pins the current <code>main</code> SHA and builds the whole estate from that one commit, so a failover that takes hours stays reproducible and internally consistent even as <code>main</code> moves on.</p>
     <div class="ref">Everything runs inside the coding tool as the engineer. There is no standalone token and no long-running headless agent.</div>`},
@@ -441,7 +441,7 @@ const D={
     <div class="ref">This is the one artifact in the chain authored by a model rather than a committed script. It is a Builder's report on its own work, which is exactly why reconcile.mjs checks it against the Terraform the Builder actually wrote.</div>`},
 
   orchestrator:{k:'Control plane · §7, §2.2',i:'gear',io:['workflows/dr-build.js','thin · stateful · central'],h:`
-    <p>The thin control plane: the committed <code>workflows/dr-build.js</code> script plus the <code>/dr-build</code> skill. It is not an agent persona, it is the engine that runs Phases 2 and 3.</p>
+    <p>The thin control plane: the committed <code>workflows/dr-build.js</code> script plus the <code>/agentic-dr:dr-build</code> skill. It is not an agent persona, it is the engine that runs Phases 2 and 3.</p>
     <p>It is the only thing that holds global state. It discovers the in-scope roots, fans out one Builder per component, assembles the DAG from their manifests, detects cycles, computes the apply order, maintains the blackboard and run-state files, routes failures back to the owning Builder, and pauses at every gate.</p>
     <div class="ref">Keeping coordination central and the workers context-light is why the design is one orchestrator over many small workers, not one large agent (§7).</div>`},
 
@@ -538,7 +538,7 @@ const D={
       <li><strong>Populate</strong>: restore data, and GitOps deploys the workloads onto the DR cluster.</li>
       <li><strong>Cutover</strong>: customer-led, gated routing of live traffic to DR at the edge and DNS.</li>
       <li><strong>Failback</strong>: route back once the source recovers. Since the source was never torn down, this is a routing change, not a rebuild.</li>
-      <li><strong>Clean up</strong>: a future, fully-gated <code>/dr-build cleanup</code> tears down the Phase-2 resources, the only destroy the agents ever do.</li>
+      <li><strong>Clean up</strong>: a future, fully-gated <code>/agentic-dr:dr-build cleanup</code> tears down the Phase-2 resources, the only destroy the agents ever do.</li>
     </ul>
     <div class="ref">One seam: Key Vaults boot already populated via external KV replication, so the build only wires workloads to the populated vault and never owns secret population.</div>`},
 };
@@ -746,7 +746,7 @@ window.addEventListener('resize',fit);
 // Each beat = a moment in the process: which nodes are live, which edges flow, what's happening.
 const SIM=[
   {t:'Invoke', nodes:['start'], edges:[],
-   cap:'A platform engineer runs /dr-build. The current main SHA is pinned, so the whole estate builds from that one commit even if a failover runs for hours.'},
+   cap:'A platform engineer runs /agentic-dr:dr-build. The current main SHA is pinned, so the whole estate builds from that one commit even if a failover runs for hours.'},
   {t:'Phase 1 · Discover', nodes:['p1','profile'], edges:[['profile','p1']],
    cap:'Phase 1, in the main loop with no cloud. Scan the source roots and subtract the scope-rules exclusions to get the in-scope list. Inclusions are discovered every run, never catalogued.'},
   {t:'Phase 1 · Build plan', nodes:['p1','buildplan'], edges:[['p1','buildplan']],

@@ -56,7 +56,7 @@ judgement is required. That line runs through the whole design.
 
 ```
       ┌─────────────────────────────────────────────────────────┐
-      │  /dr-build skill  (main loop: discovery, every gate)     │
+      │  /agentic-dr:dr-build skill  (main loop: discovery, every gate)     │
       └───────────────┬─────────────────────────────────────────┘
                       │  approved build plan + in-scope list
       ┌───────────────▼─────────────────────────────────────────┐
@@ -184,7 +184,7 @@ agentic-dr/
 
 | Workflow | Trigger | Purpose |
 | -------- | ------- | ------- |
-| CI | push, PR | `tools/test.sh` (57 checks, both scrub-gate modes) and a blocking shellcheck |
+| CI | push, PR | `tools/test.sh` (58 checks, both scrub-gate modes) and a blocking shellcheck |
 | Dependency Review | PR | block a pull request that swaps in a vulnerable action version |
 | Scorecard | push, weekly | OpenSSF supply-chain grade, published to the Security tab |
 | Release Please | push to `main` | releases and a changelog from Conventional Commits |

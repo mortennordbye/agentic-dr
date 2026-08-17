@@ -92,4 +92,4 @@ A profile change lands in the **same commit** as the estate change that caused i
 
 The lint must stay green on your known-good roots, and **a new FORBIDDEN pattern must actually fire
 on the source root that motivated it** — a pattern that matches nothing is worse than no pattern,
-because it reads as coverage. Then run `/dr-build dry-run`.
+because it reads as coverage. Then run `/agentic-dr:dr-build dry-run`.

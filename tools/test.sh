@@ -285,6 +285,23 @@ if [[ -n "$bare_refs" ]]; then
 else
   ok "every agent is referenced by its scoped ${plugin_name}: name, never bare"
 fi
+# The same trap, one level out: documentation that tells a human to type the bare `/dr-build` is
+# telling them to type something that does not resolve. The agent check above deliberately ignores
+# prose, because prose mentions of an agent are not resolution sites — but an invocation IS the
+# resolution site when the resolver is a person reading the docs. A path (skills/dr-build/) or the
+# scoped form are both fine; a slash-prefixed bare name is not.
+# The leading alternation matters: these appear at the start of a line inside fenced code blocks,
+# where a character class with nothing to match sees nothing. A first cut of this check missed
+# exactly that and passed while the docs were wrong.
+bare_skill="$(grep -rnoE "(^|[^a-zA-Z0-9_/:])/dr-build\\b" \
+                ARCHITECTURE.md README.md agents docs skills workflows profile.example 2>/dev/null || true)"
+if [[ -n "$bare_skill" ]]; then
+  bad "the skill is invoked by its BARE name in documentation — a reader typing that gets nothing"
+  printf '%s\n' "$bare_skill" | head -5 | sed 's/^/      /'
+else
+  ok "every documented invocation carries the ${plugin_name}: prefix"
+fi
+
 # A plugin's workflows are auto-discovered and each is exposed as a dispatch skill under its
 # meta.name. Give a workflow the same name as a skill directory and the generated shim SHADOWS the
 # real skill: invoking it returns "call Workflow with these args" instead of the skill body, which
