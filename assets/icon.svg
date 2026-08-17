@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Agentic DR">
+  <title>Agentic DR</title>
+  <!--
+    The mark is the architecture, not decoration.
+
+    One hexagon — one estate — cut down the middle. The left half is production: whole, solid, read
+    as truth and never written to. The right half is the DR region, and it is not a copy: it is
+    reassembled in three tiers, the way an apply order materialises it, deepest tier first.
+
+    The gap between the halves is the point of the whole project. That is the blast-radius boundary
+    (ARCHITECTURE.md §1) which the build may never cross, so it is drawn as absence rather than as
+    a line.
+
+    Every tier is an opaque tint rather than a transparency, so the mark survives a dark page: an
+    alpha ramp over #0d1117 turns to mud. Colours are the build diagram's own accents.
+  -->
+  <defs>
+    <linearGradient id="prod" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#c3765a"/>
+      <stop offset="1" stop-color="#a8583a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- production: one solid mass -->
+  <path d="M58 12 L58 116 L13 90 L13 38 Z" fill="url(#prod)"/>
+
+  <!-- DR: the same estate, regenerated in three equal tiers, deepest first -->
+  <path d="M70 85 L115 85 L115 90 L70 116 Z" fill="#a8583a"/>
+  <path d="M70 49 L115 49 L115 79 L70 79 Z" fill="#c3765a"/>
+  <path d="M70 12 L115 38 L115 43 L70 43 Z" fill="#dda184"/>
+</svg>

@@ -1,0 +1,75 @@
+name: Assets
+
+# The mark has one source of truth, assets/icon.svg, and every raster is generated from it.
+#
+# That is the same rule the framework applies to a DR estate: a generated artefact regenerated on
+# demand cannot drift, while a hand-exported copy rots quietly until the day it matters. The repo
+# already learned this the hard way with the build diagram, whose committed PNG went stale the
+# moment its labels changed and no gate could see it.
+#
+# On main the rasters are rendered and committed. On a pull request they are rendered and compared,
+# so a stale PNG fails the check instead of merging. The push trigger is scoped to the SVG, so the
+# commit this workflow makes cannot retrigger it.
+
+on:
+  push:
+    branches: [main]
+    paths: ['assets/icon.svg', '.github/workflows/assets.yml']
+  pull_request:
+    paths: ['assets/icon.svg', '.github/workflows/assets.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: assets-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  render:
+    name: Render the mark
+    runs-on: ubuntu-latest
+    permissions:
+      # Write only on main, to commit the rendered rasters back.
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install renderer
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq librsvg2-bin
+
+      - name: Render
+        run: |
+          set -euo pipefail
+          # 512 is the README and social size; 64 is the favicon for the Pages site.
+          rsvg-convert -w 512 -h 512 assets/icon.svg -o assets/icon.png
+          rsvg-convert -w 64  -h 64  assets/icon.svg -o docs/favicon.png
+          ls -l assets/icon.png docs/favicon.png
+
+      - name: Fail on drift (pull requests)
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          if ! git diff --quiet -- assets/icon.png docs/favicon.png; then
+            echo "::error::A raster is stale. assets/icon.svg changed without its generated PNGs."
+            echo "They are generated, never hand-edited: merge to main and this workflow rewrites them,"
+            echo "or render locally with rsvg-convert using the commands in this workflow."
+            git diff --stat -- assets/icon.png docs/favicon.png
+            exit 1
+          fi
+          echo "Rasters match their source."
+
+      - name: Commit the rasters (main)
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- assets/icon.png docs/favicon.png; then
+            echo "Rasters already current; nothing to commit."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/icon.png docs/favicon.png
+          git commit -m "chore(assets): re-render the mark from assets/icon.svg"
+          git push
