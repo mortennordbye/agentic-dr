@@ -1,0 +1,8 @@
+# A build runs `terraform init`, which drops provider binaries and a lock file into every generated
+# root. They are machine-specific and large; the generated Terraform itself is the reviewable output.
+.terraform/
+.terraform.lock.hcl
+
+# The advisory lock (ARCHITECTURE §16.11) is per-session coordination, never history. A dead session
+# leaves one behind, which is exactly why it must not be tracked.
+agentic-dr/state/build.lock

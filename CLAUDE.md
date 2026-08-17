@@ -99,7 +99,7 @@ bash. Everything below works from a clean clone.
 
 ```bash
 # test:     bash tools/test.sh          (the whole suite; includes both scrub-gate modes)
-# lint:     shellcheck engine/*.sh tools/*.sh
+# lint:     shellcheck engine/*.sh tools/*.sh demo/*.sh
 # validate: claude plugin validate . --strict
 # scrub:    bash tools/scrub-check.sh --history
 ```
@@ -111,7 +111,7 @@ overrides (`AGENTIC_DR_DIR`, `SCRUB_PATTERNS`).
 ## Before reporting a task complete
 
 ```bash
-# verify: bash tools/test.sh && shellcheck engine/*.sh tools/*.sh && claude plugin validate . --strict
+# verify: bash tools/test.sh && shellcheck engine/*.sh tools/*.sh demo/*.sh && claude plugin validate . --strict
 ```
 
 Run it even when the change looks obviously correct. Skip rules: none. A doc-only change still

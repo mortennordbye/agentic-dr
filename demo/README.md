@@ -17,17 +17,26 @@ There is a second reason. Every run pins the commit of the repo it is invoked in
 whole estate from it. Run it here and it pins *the plugin's* commit, which is meaningless — the
 pinned SHA is supposed to identify the state of an estate.
 
-So copy it somewhere scratch, and work there:
+`try.sh` does the copying, and the initial commit that discovery needs:
+
+```bash
+bash demo/try.sh                 # → ~/agentic-dr-demo
+bash demo/try.sh /some/where     # or wherever you like
+```
+
+It refuses to write into a directory that already has anything in it, so a second run cannot discard
+a build you wanted to keep. It prints the commands to run next, with the plugin path already filled
+in. By hand it is the same four steps:
 
 ```bash
 cp -R demo ~/agentic-dr-demo && cd ~/agentic-dr-demo
-git init -q && git add -A && git commit -qm "fictional estate"   # discovery pins a commit
+git init -q && git add -A && git commit -qm "fictional estate"
 claude --plugin-dir /path/to/agentic-dr
 /agentic-dr:dr-build dry-run
 ```
 
-The `git init` matters: discovery pins the current commit, so an estate with no commits has nothing
-to pin.
+The initial commit matters: discovery pins the current commit, so an estate with no commits has
+nothing to pin.
 
 Generated Terraform lands in the DR output tree, run state in the state directory — both named by
 `agentic-dr/profile/repo-map.md`, like everything else.

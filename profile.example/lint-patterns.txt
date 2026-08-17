@@ -63,7 +63,7 @@ REQUIRED	northeurope	the DR region must appear somewhere in the root
 # DR name prefix nor the DR region token. This is a property of the root, re-evaluated every build,
 # not a standing exemption for a named root.
 CONDITIONAL	marker-if-regional	ctso-dr-
-CONDITIONAL	cidr-if-network	10\.200\.
+CONDITIONAL	cidr-if-network	10\.20[0-2]\.
 CONDITIONAL	env-tag-dr	DR
 # A PRESENCE check, not an absence check: omitting this var silently inherits the source identity
 # baked into the shared vnet module's default, which a token grep cannot see because the value lives

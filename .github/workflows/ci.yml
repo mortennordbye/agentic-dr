@@ -34,4 +34,4 @@ jobs:
       # an unchecked `cd` in tools/test.sh, now fixed. The script list is a glob rather than a
       # catalogue so a shell script added later cannot go unchecked by omission.
       - name: Shellcheck
-        run: shellcheck --severity=warning engine/*.sh tools/*.sh
+        run: shellcheck --severity=warning engine/*.sh tools/*.sh demo/*.sh
