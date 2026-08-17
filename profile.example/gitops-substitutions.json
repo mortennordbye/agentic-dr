@@ -1,0 +1,47 @@
+{
+  "_comment": "EXAMPLE PROFILE. Runtime source for engine/gitops-rewrite.mjs. Schema: docs/gitops-substitutions-schema.md",
+
+  "source_dir": "gitops/prod/components",
+  "target_dir": "gitops/dr/components",
+
+  "_exclude_comment": "Empty by design: every component is regenerated, and a new one is picked up automatically. The mechanism stays for a genuine future exclusion, and a stale pinned entry is surfaced as a warning rather than swallowed.",
+  "exclude": [],
+
+  "post_apply_placeholder_prefix": "__DR_POST_APPLY__",
+  "decide_placeholder_prefix": "__DR_DECIDE__",
+
+  "_auto_comment": "Applied longest-first so a token that is a prefix of another cannot partially shadow it.",
+  "auto": [
+    { "from": "westeurope", "to": "northeurope", "why": "region token" },
+    { "from": "ctso-prod-weu-", "to": "ctso-dr-prod-neu-", "why": "resource name prefix" },
+    { "from": "10.100.", "to": "10.200.", "why": "production CIDR" }
+  ],
+
+  "_post_apply_comment": "kind:'token' replaces every occurrence of match; kind:'line-value' replaces the scalar value of a `<key>: <value>` line.",
+  "post_apply": [
+    {
+      "slug": "aks-identity-client-id",
+      "kind": "line-value",
+      "match": "client-id",
+      "what": "the DR workload identity client id",
+      "why": "DR identities are new, with new client ids that do not exist until the identity root applies"
+    }
+  ],
+
+  "decide": [
+    {
+      "slug": "gateway-trusted-ips",
+      "match": "10.150.0.0/16",
+      "default_kept": true,
+      "what": "on-prem source ranges trusted by the internal gateway",
+      "why": "on-prem reaches DR over the same links, so keeping the source list is usually right — but confirm it"
+    }
+  ],
+
+  "_forbidden_residual_comment": "The completeness guard. Cutover hostnames are deliberately absent: they legitimately survive into the DR overlay.",
+  "forbidden_residual": [
+    { "pattern": "ctso-prod-", "why": "source resource name prefix survived the rewrite" },
+    { "pattern": "westeurope", "why": "source region token survived the rewrite" },
+    { "pattern": "10\\.10[0-2]\\.", "why": "source CIDR survived the rewrite" }
+  ]
+}

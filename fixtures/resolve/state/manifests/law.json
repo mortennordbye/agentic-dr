@@ -1,0 +1,2 @@
+{"component":"law","source_root":"terraform/prod/law","target_root":"dr/law","tfc_workspace":"tfc-dr-law",
+ "produces":["log analytics workspace"],"consumes":[],"prereqs":[],"notes":[]}

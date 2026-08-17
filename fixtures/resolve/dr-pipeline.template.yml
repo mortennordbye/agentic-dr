@@ -1,0 +1,25 @@
+# Pristine input for the resolver test: resolve.mjs regenerates ONLY the region between the two
+# sentinels, leaving any hand-authored jobs above and below untouched (ARCHITECTURE §16.12).
+name: DR apply
+on:
+  workflow_dispatch:
+    inputs:
+      plan_only:
+        type: boolean
+        default: true
+      components_to_deploy:
+        default: all
+      ignore_needs:
+        default: 'false'
+
+jobs:
+  # A hand-authored job outside the managed region. The resolver must never touch or remove it.
+  deploy_prestaged_vnet:
+    uses: ./.github/workflows/terraform-apply-template.yml
+    with:
+      terraform_directory: "dr/prestaged-vnet"
+      environment: "dr"
+    secrets: inherit
+
+  # >>> BEGIN generated DR jobs (managed by agentic-dr resolve.mjs — do not edit by hand) <<<
+  # >>> END generated DR jobs <<<

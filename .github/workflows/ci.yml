@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The scrub gate's --history mode needs the full history, not a shallow clone: the whole
+          # point is catching an identifier that a later commit removed from the tree.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify the deterministic engine
+        run: bash tools/test.sh
+
+      # Blocking. The findings were triaged at every severity, not just warning, and came to one:
+      # an unchecked `cd` in tools/test.sh, now fixed. The script list is a glob rather than a
+      # catalogue so a shell script added later cannot go unchecked by omission.
+      - name: Shellcheck
+        run: shellcheck --severity=warning engine/*.sh tools/*.sh

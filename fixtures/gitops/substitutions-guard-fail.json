@@ -1,0 +1,14 @@
+{
+  "_comment": "FIXTURE PATTERNS for tools/test.sh: the completeness guard must FAIL the build. Same source tree as substitutions.json, with the region AUTO pair removed — an incomplete rule set is exactly how a real leak happens, so it is the leak this reproduces. Kept deliberately minimal; anything not needed to make a token survive is left out.",
+
+  "source_dir": "source",
+  "target_dir": "out-guard-fail",
+
+  "auto": [
+    { "from": "ctso-prod-weu-", "to": "ctso-dr-prod-neu-", "why": "resource name prefix" }
+  ],
+
+  "forbidden_residual": [
+    { "pattern": "westeurope", "why": "source region token survived the rewrite" }
+  ]
+}

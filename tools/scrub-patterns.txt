@@ -1,0 +1,57 @@
+# tools/scrub-patterns.txt — the public release gate.
+#
+# THIS FILE NAMES NOTHING. That is deliberate, and it is the whole design.
+#
+# A gate that greps for "no subscription 1234abcd" has to contain "1234abcd", so committing it to a
+# public repo publishes the very identifier it exists to suppress. So the public gate checks SHAPES
+# instead: it finds every GUID-, IP- and hostname-shaped string in the tree and fails on any that is
+# not one of this repo's documented example values.
+#
+# That is strictly stronger than a token list for the thing that matters here. A token list only
+# catches identifiers someone remembered to add; a shape check catches every real-looking identifier,
+# including ones from an estate nobody has thought about yet.
+#
+# What it CANNOT catch is a bare word — a company name, a person, an internal system. For that, keep
+# a private supplementary list OUTSIDE this repository and point the checker at it:
+#
+#     SCRUB_PATTERNS=/path/to/private-patterns.txt bash tools/scrub-check.sh
+#
+# See docs/scrub-gate.md.
+#
+# ---------------------------------------------------------------------------------------------------
+# Format: <KIND><TAB>...<TAB><reason>
+#
+#   FORBIDDEN  <ere>                  <reason>   any match fails
+#   EXTRACT    <find-ere> <allow-ere> <reason>   every match of find-ere must also match allow-ere
+#
+# Matching is case-insensitive. Lines starting with # and blank lines are ignored.
+# ---------------------------------------------------------------------------------------------------
+
+# --- GUIDs ------------------------------------------------------------------------------------------
+# Every GUID in this repo must be a documented placeholder: all-zero except the final group, which
+# distinguishes one example identity from another (…0001, …00a1, …00b1). A real Azure subscription,
+# tenant, principal or client id cannot satisfy that shape.
+EXTRACT	[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}	00000000-0000-0000-0000-[0-9a-f]{12}	a GUID that is not a documented all-zero placeholder
+
+# --- IPv4 literals ------------------------------------------------------------------------------------
+# Allowed: the example estate's own RFC1918 blocks (source 10.100-10.102, DR 10.200-10.202, on-prem
+# 10.150), and the usual
+# non-routable/documentation constants. Anything else is a real address from a real network — most
+# dangerous of all a public egress IP, which maps a third party's allowlist.
+EXTRACT	\b(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]|[0-9])(\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]|[0-9])){3}\b	^(10\.(100|101|102|150|200|201|202)\.|127\.0\.0\.1|0\.0\.0\.0|255\.255\.255\.255|192\.0\.2\.|198\.51\.100\.|203\.0\.113\.)	an IPv4 address outside the example estate and the reserved documentation ranges
+
+# --- Hostnames ------------------------------------------------------------------------------------------
+# Requires at least three labels (a.b.tld), which is the shape an internal FQDN leaks in
+# (argocd.internal.prod.<estate>.cloud). Two-label domains are deliberately NOT matched: `det.io` and
+# `w3.org` in the bundled diagram are a JavaScript property access and a spec URL, and there is no
+# shape that separates those from a real corporate domain. A bare company domain is the private
+# supplementary list's job, not this one.
+# Allowed: RFC 2606 example domains, the fictional example estate's domain, and the handful of real
+# infrastructure domains this project legitimately documents.
+EXTRACT	[a-z0-9][a-z0-9-]*(\.[a-z0-9][a-z0-9-]*)+\.(no|se|cloud|net|io|dev|org|internal|local|com)\b	^(example\.(com|net|org)|.*\.example\.(com|net|org)|.*\.contoso\.(cloud|net)|registry\.terraform\.io|app\.terraform\.io|code\.claude\.com|docs\.claude\.com|json-schema\.org|www\.apache\.org|www\.w3\.org)	a multi-label hostname outside the documented example and reference set
+
+# --- Note ------------------------------------------------------------------------------------------------
+# There is deliberately no check here for hardcoded paths from the estate this framework was
+# extracted from. That is a genericity regression, not a leak, and it lives in tools/test.sh —
+# which also keeps every pattern in this file self-consistent, so the gate can scan its own
+# patterns file instead of having to exempt it.

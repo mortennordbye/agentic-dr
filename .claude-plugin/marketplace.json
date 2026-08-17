@@ -1,0 +1,15 @@
+{
+  "name": "agentic-dr",
+  "description": "The agentic DR build framework: generate a disaster-recovery estate on demand from the production IaC you already maintain.",
+  "owner": {
+    "name": "Morten Victor Nordbye"
+  },
+  "plugins": [
+    {
+      "name": "agentic-dr",
+      "source": "./",
+      "description": "Regenerate a disaster-recovery infrastructure estate on demand from live production IaC, instead of maintaining a parallel copy that drifts.",
+      "license": "Apache-2.0"
+    }
+  ]
+}

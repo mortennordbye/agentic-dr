@@ -1,0 +1,14 @@
+# Fixture: a data-plane component pinned in `exclude`. It must NOT appear in the generated overlay.
+#
+# Its source tokens are the tell: if discovery stopped subtracting exclusions, they would be
+# rewritten on the way out and the component would ship silently, with nothing failing.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ctso-prod-weu-storefront-api
+  namespace: storefront
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: storefront-api

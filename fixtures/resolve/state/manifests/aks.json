@@ -1,0 +1,6 @@
+{"component":"aks","source_root":"terraform/prod/aks","target_root":"dr/aks","tfc_workspace":"tfc-dr-aks",
+ "produces":["aks cluster","aks identity"],
+ "consumes":[{"what":"dr subnets","from":"vnet","via":"data-rename","status":"resolved"},
+             {"what":"log analytics workspace","from":"law","via":"data-rename","status":"resolved"},
+             {"what":"acr login server","from":"acr-external","via":"override","status":"blackboard"}],
+ "prereqs":[],"notes":[]}

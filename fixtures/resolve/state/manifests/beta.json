@@ -1,0 +1,3 @@
+{"component":"beta","source_root":"terraform/prod/beta","target_root":"dr/beta","tfc_workspace":"tfc-dr-beta",
+ "produces":["beta out"],"consumes":[{"what":"alpha out","from":"alpha","via":"data-rename","status":"resolved"}],
+ "prereqs":[],"notes":[]}

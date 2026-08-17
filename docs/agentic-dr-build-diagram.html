@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Agentic DR Build · Process</title>
+<style>
+  :root{
+    /* Warm paper, ink, and two muted earth accents. Reads as a printed technical document rather
+       than a console. The accent pair carries the diagram's one real distinction: rust = a step in
+       the process, sage = a component that performs it. */
+    --bg-top:#faf7f2; --bg-bot:#f3efe7; --surface:#fffdfa;
+    --line:#e6e0d5; --line2:#cfc7b8;
+    --accent:#a8583a; --accent2:#c3765a; --accent3:#4c7a6d;
+    --snow:#24201b; --fog:#4d463d; --slate:#7d756a;
+    --success:#4e7a4a; --danger:#a83f47;
+    --glow:rgba(168,88,58,.08); --shadow:rgba(72,56,38,.10);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;color:var(--snow);
+    background:var(--bg-bot);
+    font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden;}
+
+  /* ---- top bar ---- */
+  #bar{position:fixed;inset:0 0 auto 0;height:54px;z-index:20;display:flex;align-items:center;
+    gap:16px;padding:0 16px;background:var(--surface);
+    border-bottom:1px solid var(--line);box-shadow:0 1px 3px var(--shadow);}
+  #bar h1{margin:0;font-size:15px;font-weight:700;letter-spacing:.2px;white-space:nowrap;color:var(--snow);}
+  #bar .tag{font-size:11.5px;color:var(--slate);white-space:nowrap;}
+  #bar .spacer{flex:1;}
+  .btn{appearance:none;cursor:pointer;background:var(--surface);color:var(--fog);
+    border:1px solid var(--line2);border-radius:8px;height:32px;min-width:32px;padding:0 10px;
+    font-size:13px;font-weight:600;line-height:30px;transition:.12s;}
+  .btn:hover{border-color:var(--accent);color:var(--accent);background:var(--glow);}
+  .hint{font-size:11px;color:var(--slate);}
+  #bar .spd{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--slate);white-space:nowrap;}
+  #bar .spd select{appearance:none;cursor:pointer;background:var(--surface);color:var(--fog);
+    border:1px solid var(--line2);border-radius:8px;height:32px;padding:0 24px 0 9px;
+    font-size:13px;font-weight:600;font-family:inherit;transition:.12s;
+    background-image:linear-gradient(45deg,transparent 50%,var(--slate) 50%),linear-gradient(135deg,var(--slate) 50%,transparent 50%);
+    background-position:calc(100% - 13px) 14px,calc(100% - 9px) 14px;
+    background-size:4px 4px,4px 4px;background-repeat:no-repeat;}
+  #bar .spd select:hover{border-color:var(--accent);color:var(--accent);}
+
+  /* ---- viewport / canvas ---- */
+  #viewport{position:fixed;inset:54px 0 0 0;overflow:hidden;cursor:grab;
+    background-color:var(--bg-bot);
+    background-image:radial-gradient(circle, #dcd4c6 1px, transparent 1.4px);
+    background-size:26px 26px;background-position:-13px -13px;}
+  #viewport.grabbing{cursor:grabbing;}
+  #canvas{position:absolute;top:0;left:0;transform-origin:0 0;}
+  svg.wires{position:absolute;top:0;left:0;overflow:visible;}
+
+  /* ---- surface bands ---- */
+  .band{position:absolute;border-radius:18px;border:1px dashed var(--line2);}
+  .band .lbl{position:absolute;top:10px;left:16px;font-size:11px;font-weight:700;
+    letter-spacing:1px;text-transform:uppercase;color:var(--slate);}
+
+  /* ---- nodes ---- */
+  .node{position:absolute;border-radius:12px;background:var(--surface);
+    border:1px solid var(--line);display:flex;align-items:center;gap:11px;
+    padding:9px 14px 9px 16px;cursor:pointer;user-select:none;
+    transition:transform .1s,box-shadow .15s,border-color .15s;
+    box-shadow:0 1px 2px var(--shadow),0 4px 12px var(--shadow);}
+  .node:hover{transform:translateY(-1px);border-color:var(--c);
+    box-shadow:0 6px 18px var(--shadow);}
+  .node .bar{position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:12px 0 0 12px;background:var(--c);}
+  .tier-pri .bar{background:linear-gradient(180deg,var(--accent),var(--accent2));}
+  .node .chip{flex:none;width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+    background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 55%,transparent);}
+  .node .chip.num{font-size:14px;font-weight:800;color:var(--c);}
+  .node .meta{min-width:0;}
+  .node .ttl{font-size:13.5px;font-weight:700;color:var(--snow);display:flex;align-items:center;gap:7px;line-height:1.2;}
+  .node .sub{font-size:11px;color:var(--slate);margin-top:3px;line-height:1.35;}
+  .node .pill{font-size:9.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+    color:var(--c);border:1px solid var(--c);border-radius:5px;padding:1px 5px;opacity:.82;}
+  .node.gate .chip{background:color-mix(in srgb,var(--danger) 14%,transparent);border-color:color-mix(in srgb,var(--danger) 60%,transparent);}
+  .node.gate .pill{color:var(--danger);border-color:var(--danger);opacity:1;}
+  .node.dim{opacity:.34;}
+  .node.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent),0 8px 22px rgba(168,88,58,.16);transform:translateY(-1px);}
+
+  /* tier colors */
+  .tier-pri{--c:var(--accent);} .tier-sys{--c:var(--accent3);} .tier-ext{--c:var(--slate);}
+
+  /* ---- detail drawer ---- */
+  #drawer{position:fixed;top:54px;right:0;bottom:0;width:430px;max-width:92vw;z-index:25;
+    background:var(--surface);border-left:1px solid var(--line2);
+    box-shadow:-10px 0 30px var(--shadow);transform:translateX(105%);transition:transform .22s ease;
+    display:flex;flex-direction:column;}
+  #drawer.open{transform:translateX(0);}
+  #drawer .head{padding:18px 20px 14px;border-bottom:1px solid var(--line);position:relative;}
+  #drawer .kicker{font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent);
+    display:flex;align-items:center;gap:8px;}
+  #drawer .kicker svg{display:block;}
+  #drawer h2{margin:8px 0 0;font-size:19px;color:var(--snow);}
+  #drawer .body{padding:16px 20px 30px;overflow:auto;font-size:13.5px;line-height:1.62;color:var(--fog);}
+  #drawer .body p{margin:0 0 12px;}
+  #drawer .body strong{color:var(--snow);}
+  #drawer .body code{background:#f1ece3;border:1px solid var(--line);border-radius:4px;padding:0 4px;font-size:12px;color:var(--accent3);}
+  #drawer .body .ref{margin-top:14px;font-size:11.5px;color:var(--slate);border-top:1px solid var(--line);padding-top:10px;}
+  #drawer .body ul{margin:0 0 12px;padding-left:18px;}
+  #drawer .body li{margin:4px 0;}
+  /* z-index matters: .head is a later positioned sibling and would otherwise paint over the
+     button and swallow the click, leaving a × that looks live but does nothing. */
+  #drawer .close{position:absolute;top:14px;right:14px;z-index:2;cursor:pointer;border:none;background:transparent;
+    color:var(--slate);font-size:22px;line-height:1;padding:4px;}
+  #drawer .close:hover{color:var(--snow);}
+  #drawer .io{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 4px;}
+  #drawer .io .chip{font-size:11px;border:1px solid var(--line2);border-radius:999px;padding:3px 9px;color:var(--slate);}
+
+  /* ---- legend ---- */
+  #legend{position:fixed;left:14px;bottom:14px;z-index:18;background:rgba(255,253,250,.93);
+    backdrop-filter:blur(6px);border:1px solid var(--line2);border-radius:12px;padding:11px 13px;
+    box-shadow:0 4px 16px var(--shadow);
+    font-size:11.5px;color:var(--slate);max-width:290px;}
+  #legend .row{display:flex;flex-wrap:wrap;gap:7px 14px;align-items:center;}
+  #legend .it{display:flex;align-items:center;gap:7px;}
+  #legend .d{width:11px;height:11px;border-radius:3px;border:2px solid;}
+  #legend .ln{width:22px;height:0;border-top:2.5px solid;}
+  #legend hr{border:none;border-top:1px solid var(--line);margin:9px 0;}
+  #legend .note{margin-top:8px;color:var(--slate);opacity:.85;font-size:11px;}
+
+  /* ---- simulation ---- */
+  .node.live{z-index:6;border-color:var(--c);animation:nodepulse 1.25s ease-in-out infinite;}
+  .node.conn{border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 4px 14px var(--shadow);}
+  .node.livegate{--c:var(--danger);}
+  @keyframes nodepulse{
+    0%,100%{box-shadow:0 0 0 1px var(--c),0 4px 14px var(--shadow);}
+    50%    {box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 30%,transparent),0 4px 16px var(--shadow);}
+  }
+  svg.wires polyline.flow{stroke-dasharray:7 7;animation:flowdash .7s linear infinite;}
+  @keyframes flowdash{to{stroke-dashoffset:-28;}}
+
+  #sim{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:19;
+    width:min(820px,94vw);background:rgba(255,253,250,.97);backdrop-filter:blur(8px);
+    border:1px solid var(--line2);border-radius:14px;padding:16px 22px 18px;
+    box-shadow:0 10px 32px var(--shadow);display:none;}
+  #sim.on{display:block;}
+  #sim.gate{border-color:color-mix(in srgb,var(--danger) 70%,var(--line2));}
+  #sim .top{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+  #sim .step{font-size:13px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:var(--accent);}
+  #sim.gate .step{color:var(--danger);}
+  #sim .count{margin-left:auto;font-size:13px;color:var(--slate);font-variant-numeric:tabular-nums;}
+  #sim .cap{font-size:16px;line-height:1.6;color:var(--snow);}
+  #sim .track{margin-top:14px;height:5px;border-radius:3px;background:#e6e0d5;overflow:hidden;}
+  #sim .fill{height:100%;width:0;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .35s ease;}
+  #sim.gate .fill{background:var(--danger);}
+  #sim .sbtn{appearance:none;cursor:pointer;background:var(--surface);color:var(--accent);
+    border:1px solid var(--line2);border-radius:8px;height:30px;padding:0 13px;
+    font-size:13px;font-weight:700;line-height:28px;transition:.12s;}
+  #sim .sbtn:hover{border-color:var(--accent);background:var(--glow);}
+  #sim .sbtn.primary{background:var(--accent);color:#fffdfa;border-color:var(--accent);}
+  #sim .sbtn.primary:hover{background:#1d4ed8;}
+</style>
+</head>
+<body>
+
+<div id="bar">
+  <h1>Agentic DR Build</h1>
+  <span class="tag">How the agent fleet regenerates the Phase-2 disaster-recovery estate on demand, read left to right.</span>
+  <span class="spacer"></span>
+  <button class="btn" id="play">▶ Play</button>
+  <label class="spd" for="speed">Speed
+    <select id="speed" title="How long Play dwells on each step">
+      <option value="0.25">0.25× · slow read</option>
+      <option value="0.5">0.5×</option>
+      <option value="1" selected>1× · default</option>
+      <option value="2">2×</option>
+      <option value="4">4× · skim</option>
+    </select>
+  </label>
+  <button class="btn" id="tour">Guided tour</button>
+  <button class="btn" id="fit">Fit</button>
+  <button class="btn" id="zout">–</button>
+  <button class="btn" id="zin">+</button>
+</div>
+
+<div id="viewport">
+  <div id="canvas">
+    <svg class="wires" id="wires"></svg>
+  </div>
+</div>
+
+<div id="drawer">
+  <button class="close" id="dclose">×</button>
+  <div class="head">
+    <div class="kicker" id="dkick">-</div>
+    <h2 id="dttl">-</h2>
+  </div>
+  <div class="body" id="dbody"></div>
+</div>
+
+<div id="legend">
+  <div class="row">
+    <div class="it"><span class="d" style="border-color:var(--accent)"></span>the process</div>
+    <div class="it"><span class="d" style="border-color:var(--accent3)"></span>system components</div>
+    <div class="it"><span class="d" style="border-color:var(--slate)"></span>terraform / cloud</div>
+  </div>
+  <hr/>
+  <div class="row">
+    <div class="it"><span class="ln" style="border-color:var(--line2)"></span>flow / reads / writes</div>
+    <div class="it"><span class="ln" style="border-color:var(--accent)"></span>selected</div>
+    <div class="it"><span class="ln" style="border-color:var(--danger);border-top-style:dashed"></span>human gate</div>
+  </div>
+  <div class="note">Icons mark the component type. Click any block for its full explanation.</div>
+</div>
+
+<div id="sim">
+  <div class="top">
+    <span class="step">-</span>
+    <span class="count">-</span>
+    <button class="sbtn" id="sprev">‹ Prev</button>
+    <button class="sbtn primary" id="snext">Next ›</button>
+  </div>
+  <div class="cap">-</div>
+  <div class="track"><div class="fill"></div></div>
+</div>
+
+<script>
+const TIER={pri:'#a8583a', sys:'#4c7a6d', ext:'#9a9184'};
+const C={line:'#e6e0d5', line2:'#cfc7b8', accent:'#a8583a',
+  accent2:'#c3765a', accent3:'#4c7a6d', slate:'#9a9184', fog:'#4d463d', danger:'#a83f47', success:'#4e7a4a', bg:'#f3efe7'};
+
+const WORLD_W=3540, WORLD_H=980;
+
+// ---- line-style icons (centered at 0,0, ~16px) ----
+function icon(name,c){
+  const s=`stroke="${c}" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
+  switch(name){
+    case 'terminal': return `<rect x="-8" y="-6.5" width="16" height="13" rx="2.5" ${s}/><path d="M-4,-2 L-1,1 L-4,4" ${s}/><path d="M1,4 H4.5" ${s}/>`;
+    case 'search': return `<circle cx="-1.5" cy="-1.5" r="5" ${s}/><path d="M2.2,2.2 L7,7" ${s}/>`;
+    case 'shield': return `<path d="M0,-7.5 L6.3,-4.6 V1.2 C6.3,5.4 0,8 0,8 C0,8 -6.3,5.4 -6.3,1.2 V-4.6 Z" ${s}/><path d="M-2.6,.2 L-.6,2.4 L3,-1.8" ${s}/>`;
+    case 'spark': return `<path d="M0,-8 L1.9,-1.9 L8,0 L1.9,1.9 L0,8 L-1.9,1.9 L-8,0 L-1.9,-1.9 Z" fill="${c}" stroke="none"/><path d="M5.6,-6 L6.5,-4 L8.5,-3.1 L6.5,-2.2 L5.6,-.2 L4.7,-2.2 L2.7,-3.1 L4.7,-4 Z" fill="${c}" stroke="none" opacity=".55"/>`;
+    case 'hub': return `<circle cx="0" cy="0" r="2.4" ${s}/><circle cx="0" cy="-7" r="1.7" ${s}/><circle cx="6" cy="4" r="1.7" ${s}/><circle cx="-6" cy="4" r="1.7" ${s}/><path d="M0,-2.4 V-5.3 M2,1.2 L4.6,2.9 M-2,1.2 L-4.6,2.9" ${s}/>`;
+    case 'graph': return `<circle cx="-5" cy="-4" r="2" ${s}/><circle cx="6" cy="-2" r="2" ${s}/><circle cx="-1" cy="6" r="2" ${s}/><path d="M-3.4,-3 L4.1,-2.3 M-4.2,-2.2 L-1.8,4.2 M4.6,-.4 L.7,4.6" ${s}/>`;
+    case 'wrench': return `<path d="M6.5,-6 a3.4,3.4 0 1,0 -3,5.8 L-5,5.2 a1.6,1.6 0 0,0 2.3,2.3 L3.2,2.6 A3.4,3.4 0 0,0 6.5,-6 Z" ${s}/>`;
+    case 'gear':{let t='';for(let i=0;i<8;i++){const a=i*Math.PI/4;t+=`<path d="M${(Math.cos(a)*5).toFixed(1)},${(Math.sin(a)*5).toFixed(1)} L${(Math.cos(a)*7.4).toFixed(1)},${(Math.sin(a)*7.4).toFixed(1)}" ${s}/>`;}return `<circle cx="0" cy="0" r="5" ${s}/><circle cx="0" cy="0" r="1.7" ${s}/>${t}`;}
+    case 'doc': return `<path d="M-5,-7.5 H2.5 L6,-4 V7.5 H-5 Z" ${s}/><path d="M2.5,-7.5 V-4 H6" ${s}/><path d="M-2.5,-1 H3 M-2.5,1.8 H3 M-2.5,4.4 H1" ${s}/>`;
+    case 'clipboard': return `<rect x="-5" y="-6" width="10" height="13.5" rx="2" ${s}/><path d="M-2.2,-6 V-7.6 H2.2 V-6" ${s}/><path d="M-2.5,-1 H2.5 M-2.5,2 H2.5 M-2.5,5 H.8" ${s}/>`;
+    case 'data': return `<ellipse cx="0" cy="-5" rx="6.5" ry="2.4" ${s}/><path d="M-6.5,-5 V5 a6.5,2.4 0 0 0 13,0 V-5" ${s}/><path d="M-6.5,0 a6.5,2.4 0 0 0 13,0" ${s}/>`;
+    case 'cloud': return `<path d="M-5,4 a4,4 0 0,1 .6,-7.9 a5.2,5.2 0 0,1 9.7,1.2 a3.2,3.2 0 0,1 -.9,6.7 Z" ${s}/>`;
+    case 'code': return `<path d="M-3,-4.5 L-7.5,0 L-3,4.5 M3,-4.5 L7.5,0 L3,4.5 M1.6,-5.5 L-1.6,5.5" ${s}/>`;
+    case 'pipe': return `<path d="M5.5,-3.2 A6,6 0 1,0 6.2,2.6" ${s}/><path d="M3,-4.4 L6.2,-3 L4.8,.2" ${s}/>`;
+    case 'flag': return `<path d="M-5,-7.5 V8" ${s}/><path d="M-5,-7 H5 L2,-4 L5,-1 H-5" ${s}/>`;
+    case 'swap': return `<path d="M-6,-3.2 H5" ${s}/><path d="M2.2,-6 L5.6,-3.2 L2.2,-.4" ${s}/><path d="M6,3.2 H-5" ${s}/><path d="M-2.2,.4 L-5.6,3.2 L-2.2,6" ${s}/>`;
+    // real brand glyphs (Simple Icons, CC0) - filled, 24×24 → centered & scaled
+    case 'terraform': return `<path fill="${c}" transform="translate(-9,-9) scale(.75)" d="M1.44 0v7.575l6.561 3.79V3.787zm21.12 4.227l-6.561 3.791v7.574l6.56-3.787zM8.72 4.23v7.575l6.561 3.787V8.018zm0 8.405v7.575L15.28 24v-7.578z"/>`;
+    case 'github': return `<path fill="${c}" transform="translate(-9,-9) scale(.75)" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>`;
+    case 'githubactions': return `<path fill="${c}" transform="translate(-9,-9) scale(.75)" d="M10.984 13.836a.5.5 0 0 1-.353-.146l-.745-.743a.5.5 0 1 1 .706-.708l.392.391 1.181-1.18a.5.5 0 0 1 .708.707l-1.535 1.533a.504.504 0 0 1-.354.146zm9.353-.147l1.534-1.532a.5.5 0 0 0-.707-.707l-1.181 1.18-.392-.391a.5.5 0 1 0-.706.708l.746.743a.497.497 0 0 0 .706-.001zM4.527 7.452l2.557-1.585A1 1 0 0 0 7.09 4.17L4.533 2.56A1 1 0 0 0 3 3.406v3.196a1.001 1.001 0 0 0 1.527.85zm2.03-2.436L4 6.602V3.406l2.557 1.61zM24 12.5c0 1.93-1.57 3.5-3.5 3.5a3.503 3.503 0 0 1-3.46-3h-2.08a3.503 3.503 0 0 1-3.46 3 3.502 3.502 0 0 1-3.46-3h-.558c-.972 0-1.85-.399-2.482-1.042V17c0 1.654 1.346 3 3 3h.04c.244-1.693 1.7-3 3.46-3 1.93 0 3.5 1.57 3.5 3.5S13.43 24 11.5 24a3.502 3.502 0 0 1-3.46-3H8c-2.206 0-4-1.794-4-4V9.899A5.008 5.008 0 0 1 0 5c0-2.757 2.243-5 5-5s5 2.243 5 5a5.005 5.005 0 0 1-4.952 4.998A2.482 2.482 0 0 0 7.482 12h.558c.244-1.693 1.7-3 3.46-3a3.502 3.502 0 0 1 3.46 3h2.08a3.503 3.503 0 0 1 3.46-3c1.93 0 3.5 1.57 3.5 3.5zm-15 8c0 1.378 1.122 2.5 2.5 2.5s2.5-1.122 2.5-2.5-1.122-2.5-2.5-2.5S9 19.122 9 20.5zM5 9c2.206 0 4-1.794 4-4S7.206 1 5 1 1 2.794 1 5s1.794 4 4 4zm9 3.5c0-1.378-1.122-2.5-2.5-2.5S9 11.122 9 12.5s1.122 2.5 2.5 2.5 2.5-1.122 2.5-2.5zm9 0c0-1.378-1.122-2.5-2.5-2.5S18 11.122 18 12.5s1.122 2.5 2.5 2.5 2.5-1.122 2.5-2.5zm-13 8a.5.5 0 1 0 1 0 .5.5 0 0 0-1 0zm2 0a.5.5 0 1 0 1 0 .5.5 0 0 0-1 0zm12 0c0 1.93-1.57 3.5-3.5 3.5a3.503 3.503 0 0 1-3.46-3.002c-.007.001-.013.005-.021.005l-.506.017h-.017a.5.5 0 0 1-.016-.999l.506-.017c.018-.002.035.006.052.007A3.503 3.503 0 0 1 20.5 17c1.93 0 3.5 1.57 3.5 3.5zm-1 0c0-1.378-1.122-2.5-2.5-2.5S18 19.122 18 20.5s1.122 2.5 2.5 2.5 2.5-1.122 2.5-2.5z"/>`;
+  }
+  return '';
+}
+function chipSvg(name,c){return `<svg viewBox="0 0 30 30" width="28" height="28"><g transform="translate(15,15)">${icon(name,c)}</g></svg>`;}
+
+// ---- surface bands ----
+// vertical columns - the flow runs left → right
+const BANDS=[
+  {x:30,  y:20,w:705, h:940,c:C.accent, t:'Main loop · Phase 1 · think-before-coding'},
+  {x:755, y:20,w:1395,h:940,c:C.accent3,t:'Workflow (workflows/dr-build.js) · Phases 2–3 + GitOps · autonomous'},
+  {x:2170,y:20,w:1360,h:940,c:C.accent, t:'Main loop · Phases 4–6 · interactive · gated'},
+];
+
+// ---- nodes ----  tier: pri|sys|ext · icon or step
+const NODES=[
+  // spine - the process, left → right (row cy 438)
+  {id:'start', x:60,  y:400,w:180,h:76,tier:'pri', icon:'terminal', t:'/dr-build', sub:'engineer invokes one skill · pins the main SHA', pill:'entry'},
+  {id:'p1',    x:305, y:400,w:210,h:76,tier:'pri', step:1, icon:'search', t:'Discover & plan', sub:'scan source roots → in-scope list → build plan'},
+  {id:'gate1', x:560, y:400,w:220,h:76,tier:'pri', gate:true, icon:'shield', t:'Build-plan approval', sub:'approve · amend scope · abort', pill:'gate'},
+  {id:'p2',    x:900, y:400,w:210,h:76,tier:'pri', step:2, icon:'spark', t:'Build (fan-out)', sub:'one Builder per component → DR root + manifest'},
+  {id:'p3',    x:1530,y:400,w:210,h:76,tier:'pri', step:3, icon:'hub', t:'Graph & resolve', sub:'DAG · cycles · blackboard · apply order'},
+  {id:'pg',    x:1770,y:400,w:210,h:76,tier:'pri', icon:'data', t:'GitOps overlay', sub:'regenerate DR overlay · substitute · guard', pill:'§16.15'},
+  {id:'handoff',x:2150,y:406,w:180,h:64,tier:'pri', icon:'swap', t:'Hand-off', sub:'roots + manifests + apply order + overlay → main loop'},
+  {id:'p4',    x:2400,y:400,w:210,h:76,tier:'pri', step:4, icon:'clipboard', t:'Plan (staged)', sub:'plan_only=true in dependency order · human review'},
+  {id:'p5',    x:2690,y:400,w:210,h:76,tier:'pri', step:5, icon:'wrench', t:'Triage & fix', sub:'on failure → validator → route the verdict'},
+  {id:'p6',    x:2980,y:400,w:210,h:76,tier:'pri', step:6, icon:'shield', t:'Apply (staged)', sub:'tier by tier · gated · capture residue', pill:'mode 2'},
+  {id:'end',   x:3270,y:400,w:210,h:76,tier:'pri', icon:'flag', t:'Infra up & running', sub:'customer owns the data plane →', pill:'boundary'},
+
+  // above the spine - inputs / truth in (row cy 222)
+  {id:'profile',x:295,y:185,w:230,h:74,tier:'sys', icon:'doc', t:'profile/', sub:'per-customer facts & guardrails'},
+  {id:'prod',        x:880,y:150,w:235,h:66,tier:'ext', icon:'terraform', t:'source roots', sub:'the locations repo-map.md names · read as truth'},
+  {id:'connectivity',x:880,y:252,w:235,h:66,tier:'ext', icon:'terraform', t:'network roots', sub:'hub / firewall / DNS tier · read as truth'},
+
+  // the orchestrator - thin control plane (cy 545)
+  {id:'orchestrator',x:855,y:513,w:300,h:64,tier:'sys', icon:'gear', t:'dr-build.js · Orchestrator', sub:'fans out Builders · owns DAG · blackboard · apply order'},
+
+  // human gate markers on the pipeline triggers (cy 550)
+  {id:'plangate', x:2425,y:518,w:165,h:72,tier:'pri', gate:true, icon:'shield', t:'Plan gate', sub:'approve plan run'},
+  {id:'applygate',x:3005,y:518,w:165,h:72,tier:'pri', gate:true, icon:'shield', t:'Apply gate', sub:'per-tier approval'},
+
+  // below the spine - row A: workers & checks (cy 660)
+  {id:'buildplan',x:285,y:628,w:250,h:64,tier:'sys', icon:'clipboard', t:'build-plan.md', sub:'the prediction (will / won’t / manual)'},
+  {id:'builder',  x:870,y:628,w:200,h:64,tier:'sys', icon:'spark', t:'component-builder', sub:'writes 1 DR root + its manifest'},
+  {id:'lint',     x:1110,y:628,w:150,h:64,tier:'sys', icon:'gear', t:'lint.sh', sub:'invariant lint · leakage'},
+  {id:'reconcile',x:1310,y:628,w:180,h:64,tier:'sys', icon:'gear', t:'reconcile.mjs', sub:'manifest ↔ HCL'},
+  {id:'resolve',  x:1540,y:628,w:190,h:64,tier:'sys', icon:'graph', t:'resolve.mjs', sub:'graph · order · stanzas'},
+  {id:'gitops',   x:1775,y:628,w:205,h:64,tier:'sys', icon:'gear', t:'gitops-rewrite.mjs', sub:'copy + substitute · overlay guard'},
+  {id:'pipeline', x:2400,y:628,w:210,h:64,tier:'ext', icon:'githubactions', t:'DR pipeline', sub:'the real plan/apply'},
+  {id:'validator',x:2690,y:628,w:210,h:64,tier:'sys', icon:'search', t:'plan-validator', sub:'triage failure · verdict'},
+  {id:'remediator',x:2980,y:628,w:210,h:64,tier:'sys', icon:'wrench', t:'remediator', sub:'Mode 3 adaptive fix'},
+
+  // below the spine - row B: artifacts & committed state (cy 775)
+  {id:'drroot',   x:780,y:744,w:160,h:62,tier:'ext', icon:'terraform', t:'DR root *.tf', sub:'generated estate'},
+  {id:'manifests',x:965,y:740,w:180,h:70,tier:'sys', icon:'data', t:'manifests/*.json', sub:'each Builder’s self-report'},
+  {id:'blackboard',x:1180,y:744,w:185,h:62,tier:'sys', icon:'data', t:'blackboard.md', sub:'unresolved cross-component refs'},
+  {id:'depgraph', x:1390,y:744,w:200,h:62,tier:'sys', icon:'graph', t:'dependency-graph.md', sub:'DAG + apply order + cycles'},
+  {id:'runreport',x:1615,y:744,w:185,h:62,tier:'sys', icon:'doc', t:'run-report.md', sub:'pinned SHA · built / blocked · residue'},
+  {id:'gitopsdr', x:1815,y:744,w:200,h:62,tier:'ext', icon:'data', t:'GitOps target_dir', sub:'generated platform overlay'},
+  {id:'ghlogs',   x:2400,y:744,w:210,h:62,tier:'ext', icon:'github', t:'gh run logs', sub:'plan / apply output'},
+  {id:'regiongaps',x:2690,y:744,w:210,h:62,tier:'sys', icon:'doc', t:'region-gaps.md', sub:'Mode 3 write-back (PR)'},
+];
+const N={}; NODES.forEach(n=>N[n.id]=n);
+
+// ---- edges ----  [from,to,label,type,opts]   type: flow|read|write|gate
+const EDGES=[
+  ['profile','p1','facts','read'],
+  ['p1','buildplan','writes','write'],
+  ['p1','gate1','present','flow'],
+  ['gate1','p2','approved','gate'],
+
+  ['p2','orchestrator','runs','flow'],
+  ['orchestrator','builder','spawns ×N','flow'],
+  ['profile','builder','transform rules','read',{lane:822,lo:[0,42]}],
+  ['prod','builder','reads (truth)','read',{lane:834,lo:[0,-26]}],
+  ['connectivity','builder','','read',{lane:846}],
+  ['builder','drroot','writes','write'],
+  ['builder','manifests','writes 1 per component','write'],
+  ['drroot','lint','scans','read',{hlane:720,lo:[72,0]}],
+  ['manifests','reconcile','vs manifest','read',{hlane:734}],
+  ['p2','p3','then','flow'],
+
+  ['p3','resolve','exec','flow'],
+  ['manifests','resolve','reads','read',{hlane:706}],
+  ['resolve','blackboard','writes','write'],
+  ['resolve','depgraph','','write'],
+  ['resolve','runreport','','write'],
+  ['resolve','pipeline','edits stanzas','write'],
+  ['p3','pg','then','flow'],
+  ['pg','gitops','exec','flow'],
+  ['gitops','gitopsdr','writes','write'],
+  ['pg','handoff','roots + order + overlay','flow'],
+  ['handoff','p4','','flow'],
+
+  ['p4','plangate','','flow'],
+  ['plangate','pipeline','run plan','gate'],
+  ['pipeline','ghlogs','output','write'],
+  ['ghlogs','validator','reads','read'],
+  ['p4','p5','on failure','flow'],
+  ['validator','builder','route fix','flow',{hlane:884}],
+  ['validator','remediator','escalate','flow'],
+  ['remediator','drroot','fixes','write',{hlane:910}],
+  ['remediator','regiongaps','drafts PR','write'],
+  ['p5','p6','when green','flow'],
+  ['p6','applygate','','flow'],
+  ['applygate','pipeline','apply','gate',{hlane:858}],
+  ['p6','blackboard','residue','write',{hlane:832}],
+  ['p6','end','','flow'],
+];
+
+// ---- detail text (drawn from ARCHITECTURE.md) ----
+const D={
+  start:{k:'Entry point · §2.1, §4',i:'terminal',io:['main loop','pins main SHA'],h:`
+    <p>A platform engineer opens Claude Code in this repo and runs one skill. There are three routes:</p>
+    <ul>
+      <li><strong>/dr-build dry-run</strong> (Mode 1): generate the DR estate, lint and validate it, optionally run a plan. No apply.</li>
+      <li><strong>/dr-build failover</strong> (Mode 2): generate, then a gated plan, then a gated apply, then troubleshoot failures.</li>
+      <li><strong>/dr-build fix &lt;service&gt;</strong> (Mode 3): adaptive remediation of one failing service.</li>
+    </ul>
+    <p>The skill stops and asks before any pipeline run. On invocation it pins the current <code>main</code> SHA and builds the whole estate from that one commit, so a failover that takes hours stays reproducible and internally consistent even as <code>main</code> moves on.</p>
+    <div class="ref">Everything runs inside the coding tool as the engineer. There is no standalone token and no long-running headless agent.</div>`},
+
+  profile:{k:'Input · §7 (layer 2), §15',i:'doc',io:['per-customer','the only thing that changes'],h:`
+    <p>The per-customer binding layer, and the only part of the system that changes between customers. The blueprint (this architecture, the agent personas, the scripts) names no customer and reads the profile for every concrete fact.</p>
+    <p>It holds the stable bindings and guardrails: regions, subscriptions and tokens; the naming scheme; the CIDR and IP plan; the DR identity and the four isolation levels; the repo map; the transform rules and lint patterns; scope rules; global-service handling; the DR process and RACI; prerequisites; preflight checks; and the region-gaps log.</p>
+    <p>It pins guardrails, not an inventory. Scope <em>exclusions</em> are written down and security-reviewed; scope <em>inclusions</em> are discovered at run time and never listed, so the set cannot drift.</p>
+    <div class="ref">docs/profile-contract.md is the contract and index.</div>`},
+
+  prod:{k:'Truth in · §1, §4',i:'terraform',io:['immutable','read-only'],h:`
+    <p>The source Terraform roots at the pinned <code>main</code> commit, at whichever locations <code>repo-map.md</code> names. This is the maintained desired state and the primary source of truth for everything the generator produces.</p>
+    <p>Builders read these roots but treat them as immutable: no edit, no plan, no apply against them, ever. DR is a failover, not a migration, so the source estate keeps running untouched and traffic can route back once it recovers.</p>
+    <div class="ref">Isolation holds at four independent levels (subscription, state, pipeline, write path), so even a confused agent physically cannot reach the source estate.</div>`},
+
+  connectivity:{k:'Truth in · §1, §4',i:'terraform',io:['immutable','read-only'],h:`
+    <p>The network tier of those source roots: the hub, the firewall, and the DNS and egress estate. Read as truth alongside the rest, under the same immutability and four-level isolation.</p>
+    <p>It is drawn as a separate box because a repo map typically keeps the tiers as distinct root locations that Builders read independently, and because the network and firewall roots form the first tier of the apply order that everything else depends on.</p>`},
+
+  p1:{k:'Step 1 · main loop · §8 Phase 1, §12',i:'search',io:['no cloud','no Builder spawned'],h:`
+    <p>Scan the source roots listed in <code>repo-map.md</code> at the pinned commit, then subtract the <code>scope-rules.md</code> exclusions. The result is the in-scope list and a source-to-target map. It is derived every run, never hand-maintained, so a new source component is picked up automatically.</p>
+    <p>From that list, the profile, and a static read of each source root, assemble the build plan. No Builder is spawned and nothing touches the cloud. This is the repo's think-before-coding rule applied to the whole estate.</p>
+    <div class="ref">What gets signed off is the exclusion rules, not an inventory. Discovery handles inclusions.</div>`},
+
+  pg:{k:'Phase G · workflow · §8, §16.15',i:'data',io:['autonomous','no cloud','generated output'],h:`
+    <p>After the Terraform estate is resolved, the Workflow regenerates the platform/core GitOps overlay: it copies the profile's <code>source_dir</code> into its <code>target_dir</code> and rewrites the env-specific values to their DR equivalents, reusing the same naming and CIDR transforms that build the Terraform estate.</p>
+    <p>The prod manifests stay pristine; the overlay is generated output that cannot drift. Values split three ways: <strong>AUTO</strong> (rewritten now: region, resource names, subnets, CIDRs, owner ids, paths), <strong>POST-APPLY</strong> (an identity client id, a resource id that exists only once another root applies — sentinels resolved from the producing root's Terraform output), and <strong>DECIDE</strong> (an allowlist or a DNS zone, which a human confirms). A completeness guard fails the build on any surviving prod infra token.</p>
+    <div class="ref">The mechanical rewrite runs here; the interactive residue and the commit run in the skill, because the Workflow cannot pause for input.</div>`},
+
+  gitops:{k:'Script · §8 Phase G, §16.15',i:'gear',io:['deterministic','committed','no LLM'],h:`
+    <p><strong>In one line:</strong> Terraform builds the infrastructure; this script makes the DR copy of the files that tell the Kubernetes cluster what to run on it.</p>
+    <p><strong>gitops-rewrite.mjs</strong> is the GitOps analogue of lint.sh: a committed, deterministic engine driven by <code>profile/gitops-substitutions.json</code> (the run-time rule source). It copies the in-scope components, applies the prod→DR substitutions, stamps the POST-APPLY / DECIDE sentinels, runs the completeness guard, and writes <code>state/gitops-report.md</code>.</p>
+    <p>The guard lives here rather than in <code>lint.sh</code> because that linter checks only Terraform roots (<code>*.tf</code>/<code>*.tfvars</code>); the overlay is YAML.</p>`},
+
+  gitopsdr:{k:'Output · §16.15',i:'data',io:['generated','committed for failover'],h:`
+    <p>The generated platform/core GitOps overlay, in the profile's <code>target_dir</code>. For a real failover it is committed to <code>main</code> so the DR ApplicationSet can sync it from git; in a dry-run it is the reviewable artifact, so diff it against the prod components.</p>`},
+
+  buildplan:{k:'State · §8.1, §9',i:'clipboard',io:['the prediction'],h:`
+    <p>The Phase-1 prediction of exactly what the run intends to do, in three sections:</p>
+    <ul>
+      <li><strong>Will be created</strong>: each in-scope root mapped to its DR root (name, region, CIDR, workspace), grouped by apply tier.</li>
+      <li><strong>Will not be created, and why</strong>: scope exclusions, the pre-staged Phase-1 roots, global singletons, and services already replicated to the DR region.</li>
+      <li><strong>Will need manual work</strong>: out-of-band prerequisites, bootstrap secrets and Key Vault, predicted blackboard residue, known region-parity gaps, and the customer-owned data restore and traffic cutover.</li>
+    </ul>
+    <p>It is a prediction, not the authoritative graph. The DAG and reconciled blackboard come later from the manifests, and run-report.md confirms or corrects it. Empty data-bearing roots appear under "will be created"; their data does not, because that is manual work.</p>`},
+
+  gate1:{k:'Human gate · §2.4, §8.1, §10',i:'shield',io:['hard sign-off','cheap abort point'],h:`
+    <p>A hard sign-off, not a notification. Nothing past it begins until the engineer does one of three things:</p>
+    <ul><li><strong>approve</strong> as written,</li><li><strong>amend</strong> the scope, which regenerates the plan, or</li><li><strong>abort</strong>.</li></ul>
+    <p>This is the cheapest place to stop: no roots generated, no agents spawned, no cloud touched. Its job is to catch scope and prerequisite mistakes before the run generates dozens of roots.</p>`},
+
+  p2:{k:'Step 2 · workflow · §2.2, §8 Phase 2',i:'spark',io:['autonomous','no cloud','no mid-run gate'],h:`
+    <p>The committed <code>workflows/dr-build.js</code> is the Orchestrator, a thin control plane. It spawns one Component Builder per in-scope component (parallel, capped around 10), collects a DR root and manifest from each, then runs the invariant lint and the reconcile check on every root.</p>
+    <p>Nothing touches the cloud, and there is no mid-run approval: the build plan authorized the fan-out up front, so it runs to completion on its own. Wall-clock time is roughly the slowest single component, not the sum of all of them.</p>
+    <div class="ref">Coordination stays thin, stateful and central; production stays focused, stateless and parallel. One subagent per component is a deliberate design choice (§7).</div>`},
+
+  builder:{k:'Subagent · §7, §5, §6',i:'spark',io:['1 per component','stateless','fungible'],h:`
+    <p>Spawned with the minimum context it needs: one source root, the transform rules, and the <code>variables.tf</code> of the modules that root actually calls. It is told nothing about other components, because a tight context produces cleaner Terraform.</p>
+    <p>It writes the DR root (providers, main, variables, var-file) and applies the transform by meaning, not by find-and-replace, which would corrupt partner IPs, comments, and unrelated resource IDs. It rewrites every <code>data</code>-lookup target name to its DR equivalent and returns a manifest.</p>
+    <p>Anything it cannot resolve, it records on the blackboard instead of guessing a value.</p>
+    <div class="ref">Builders never talk to each other. Every cross-component dependency is reconciled centrally by the Orchestrator.</div>`},
+
+  drroot:{k:'Truth out · §16.2',i:'code',io:['generated','committed PR'],h:`
+    <p>The generated DR estate, the output tree the Builders write. The generator commits it as a reviewable pull request, so git is both the audit trail and the baseline that Mode 1's drift check compares against.</p>
+    <p>The first Mode 1 run establishes that baseline. Drift checks become meaningful from the second run onward.</p>`},
+
+  manifests:{k:'State · §6 contract',i:'data',io:['written by the Builders','1 per component','git-ignored intermediate'],h:`
+    <p><strong>Who writes these:</strong> the Component Builders, one file each. Every Builder both <em>returns</em> its manifest to the Orchestrator (schema-validated, so it cannot answer in prose) and <em>writes</em> the same object to <code><state-dir>/manifests/&lt;component&gt;.json</code>. It is written to disk because the steps that consume it are plain scripts, not agents: <code>reconcile.mjs</code> takes the file path as an argument and <code>resolve.mjs</code> reads the whole directory, and neither can see an agent's return value.</p>
+    <p><strong>What it says:</strong> <code>component</code>, <code>source_root</code>, <code>target_root</code>, <code>tfc_workspace</code>, a <code>produces[]</code> list, a <code>consumes[]</code> list (each entry carrying a <code>via</code> of data-rename, override, post-apply, or remote-state, plus a status), <code>prereqs</code>, and notes. The Orchestrator builds the dependency DAG by matching <code>produces</code> against <code>consumes</code> across every manifest.</p>
+    <div class="ref">This is the one artifact in the chain authored by a model rather than a committed script. It is a Builder's report on its own work, which is exactly why reconcile.mjs checks it against the Terraform the Builder actually wrote.</div>`},
+
+  orchestrator:{k:'Control plane · §7, §2.2',i:'gear',io:['workflows/dr-build.js','thin · stateful · central'],h:`
+    <p>The thin control plane: the committed <code>workflows/dr-build.js</code> script plus the <code>/dr-build</code> skill. It is not an agent persona, it is the engine that runs Phases 2 and 3.</p>
+    <p>It is the only thing that holds global state. It discovers the in-scope roots, fans out one Builder per component, assembles the DAG from their manifests, detects cycles, computes the apply order, maintains the blackboard and run-state files, routes failures back to the owning Builder, and pauses at every gate.</p>
+    <div class="ref">Keeping coordination central and the workers context-light is why the design is one orchestrator over many small workers, not one large agent (§7).</div>`},
+
+  lint:{k:'Oracle 1 · invariant lint · §11',i:'gear',io:['grep, not LLM','tripwire'],h:`
+    <p><strong>In one line:</strong> it asks whether anything in the generated files still points at the live production estate, and fails the component if so.</p>
+    <p><strong>lint.sh</strong> is the invariant lint: a mechanical grep, not a model. It runs on every DR root and fails the component on any sign of source-estate leakage, including source-region tokens, source CIDRs, source resolver or firewall IPs, the source pipeline identity, source workspaces, a non-DR Environment tag, and source-depth module paths. It also checks that the expected DR markers are present. The pattern set lives in the committed <code>lint-patterns.txt</code>.</p>
+    <div class="ref">Necessary but not sufficient. The real semantic check is a human reading the plan (§10).</div>`},
+
+  reconcile:{k:'Oracle 2 · flag-don’t-guess · §11',i:'gear',io:['manifest vs HCL','deterministic','no LLM'],h:`
+    <p><strong>reconcile.mjs</strong> is the second oracle, and the one that keeps a Builder honest about its own report. The rule it enforces is <em>flag, don't guess</em>: a value another component owns and that the Builder cannot resolve must be left unset and declared, never invented.</p>
+    <p>It compares the two sides for correspondence. Every deferred value declared in the manifest (a <code>consumes[]</code> entry with <code>status: "blackboard"</code>) must have a matching <code># DR-DEFER: &lt;what&gt;</code> comment in the emitted HCL, and every such comment must have a matching manifest entry. It also validates the manifest's own shape and enums before comparing.</p>
+    <p>That catches both failure modes a model is prone to: hardcoding a plausible value while claiming to have deferred it, and deferring in the code without telling the Orchestrator, which would let the gap reach apply unnoticed.</p>
+    <div class="ref">A separate deterministic check from the lint, with a different failure mode, run per root at the end of Phase 2.</div>`},
+
+  p3:{k:'Step 3 · workflow · §8 Phase 3, §16.12',i:'hub',io:['autonomous','no cloud'],h:`
+    <p>Assemble the DAG from all manifests, detect cycles, resolve the data-renames, write any still-unresolved references to the blackboard, compute the apply order, and emit the run-report that confirms or corrects the Phase-1 build plan.</p>
+    <p>The Orchestrator does not break cycles on its own. On detecting one it halts the affected subgraph, records it, and escalates to a human, while the rest of the fan-out continues. A genuine plan-time cycle would mean the source estate itself cannot apply, which is vanishingly rare.</p>`},
+
+  resolve:{k:'Script · §8, §16.12',i:'graph',io:['deterministic'],h:`
+    <p><strong>In one line:</strong> the Builders never spoke to each other, so this script reads all their manifests together and works out what has to be created before what.</p>
+    <p>The Phase-3 resolver. From the manifests and check results it computes the DAG and apply order, writes the run-state files, and regenerates the per-component job stanzas in the single DR pipeline file from that order.</p>
+    <p>This pipeline write is the one scoped exception to the rule that Builders never write outside their own root. It belongs to the Orchestrator alone and is reviewed in the same pull request as the roots. Because it is generated from the computed order, it is not the kind of hand-maintained drift the system refuses to keep.</p>`},
+
+  blackboard:{k:'Run state · §9, §6',i:'data',io:['committed'],h:`
+    <p><strong>blackboard.md</strong> is the table of unresolved cross-component values the Orchestrator works down, with columns for <code>needed_by</code>, what is needed, the source, the resolution, and status. Anything that is not a simple data-rename lands here instead of being guessed: hardcoded principal IDs, post-apply IPs, secret references, remote-state outputs.</p>
+    <p>Post-apply residue such as the firewall IP and hub IPs is written back here tier by tier during Phase 6.</p>
+    <div class="ref">Committed so any engineer can resume the run after a dead laptop. The run has to survive a lost session (§16.3).</div>`},
+
+  depgraph:{k:'Run state · §9',i:'graph',io:['committed'],h:`
+    <p><strong>dependency-graph.md</strong> holds the DAG built from every manifest's <code>produces</code> and <code>consumes</code>, the computed apply order that the staged plan and apply follow, and the cycle report. A real plan-time cycle halts that subgraph and escalates to a human.</p>`},
+
+  runreport:{k:'Run state · §9',i:'doc',io:['committed','the outcome'],h:`
+    <p><strong>run-report.md</strong> is the actual outcome that confirms or corrects the Phase-1 build plan: the pinned SHA, the in-scope list, what built and what is blocked, prerequisites, and residue. It is a snapshot of one run, not a file anyone keeps up to date.</p>
+    <div class="ref">The three run-state files are committed. status.json is transient and git-ignored.</div>`},
+
+  plangate:{k:'Human gate · §2.4, §10',i:'shield',io:['Phase 4','approval'],h:`
+    <p>The plan approval gate. The skill stops and asks before any <code>gh workflow run … plan_only=true</code>. Nothing triggers the DR pipeline, not even a read-only plan, without an explicit yes.</p>
+    <div class="ref">A human reading each plan is the real semantic check. The lint is only a tripwire (§10).</div>`},
+
+  applygate:{k:'Human gate · §2.4, §10',i:'shield',io:['Phase 6','doubly gated'],h:`
+    <p>The apply approval gate, taken per tier. <code>plan_only=false</code> only after an explicit yes, one tier at a time (hub and firewall, then DNS, then workloads, then the rest), because a downstream plan is only valid once its upstream is applied.</p>
+    <p>It is gated twice: the approval here, plus the DR GitHub Environment's required reviewers enforcing it server-side, independent of the agents.</p>`},
+
+  handoff:{k:'Hand-off · §8',i:'swap',io:['workflow → main loop'],h:`
+    <p>The boundary between the two execution surfaces. Into the autonomous Workflow went the approved build plan, the in-scope list, and the source-to-target map. Out of it come the generated DR roots, the manifests, and the computed apply order.</p>
+    <p>From here on every step touches the cloud, runs interactively, and is gated.</p>`},
+
+  p4:{k:'Step 4 · main loop · §8 Phase 4, §6.3, §10',i:'clipboard',io:['gated','plan_only=true'],h:`
+    <p>Approval gate, then trigger the DR pipeline with <code>plan_only=true</code> in dependency order, as far as a cold region allows. A human reviews each plan, which is the real semantic check.</p>
+    <p>Cold plan-only is partial by nature: a downstream root cannot fully validate until its upstreams are applied, because the repo wires cross-root dependencies through named <code>data</code> lookups that resolve nothing in a cold region. This is a property of cold DR, stated plainly rather than hidden.</p>
+    <div class="ref">A component passes when its plan shows the intended additions and no source-estate leakage. A clean plan that wires the wrong region is still a failure.</div>`},
+
+  p5:{k:'Step 5 · main loop · §8 Phase 5, §7',i:'wrench',io:['on failure'],h:`
+    <p>On a plan or apply failure, spawn a Plan Validator. It classifies the error and returns a structured verdict, which the Orchestrator routes one of three ways:</p>
+    <ul>
+      <li><strong>config fix</strong>: re-run the owning Builder. The Workflow is resumable, so only the edited root re-runs.</li>
+      <li><strong>ordering issue</strong>: adjust the apply order.</li>
+      <li><strong>region-parity or won't-come-up</strong>: escalate to Mode 3.</li>
+    </ul>`},
+
+  validator:{k:'Subagent · §7',i:'search',io:['read-only','no edits'],h:`
+    <p>Reads the <code>gh run</code> plan and apply output, strictly read-only, classifies the failure against the category set in its persona contract, and returns a structured verdict.</p>
+    <p>It never edits code or triggers pipelines. The Orchestrator routes its verdict to the owning Builder, or escalates to Mode 3 when the failure is a region-parity or "won't come up" problem.</p>`},
+
+  remediator:{k:'Subagent · Mode 3 · §3, §16.7',i:'wrench',io:['1 service','bounded','human-invoked'],h:`
+    <p>Mode 3 is adaptive remediation of one failing service, such as a region capability gap, a quota, or a misbehaving managed service. This is problem-solving, not regeneration.</p>
+    <p>It diagnoses the root cause, proposes alternatives that satisfy the hard invariants with their trade-offs, waits for the engineer to pick one at a gate, implements it as a surgical change to the affected root, then re-plans and applies through the Mode 2 gates.</p>
+    <p>Invariants it may never propose breaking: no public exposure of an internal service, egress stays on the controlled path, no weakening of isolation, encryption-at-rest, or TLS, and DR-estate-only. If the only option that works would break one of these, it stops and escalates to a human.</p>`},
+
+  regiongaps:{k:'Profile write-back · §16.10',i:'doc',io:['auto-drafted PR','human-reviewed'],h:`
+    <p>When a Mode 3 remediation is approved and applied, it auto-drafts a pull request here recording the rationale and a revisit trigger, so the fix is not lost after one run.</p>
+    <p>It is deliberately kept out of the mechanical transform-rules: a region-parity workaround is point-in-time and would otherwise carry a stale hack forever. The PR is human-reviewed and never auto-merged.</p>`},
+
+  p6:{k:'Step 6 · main loop · Mode 2 only · §8 Phase 6, §10',i:'shield',io:['doubly gated','tier by tier'],h:`
+    <p>Approval gate per tier, then flip <code>plan_only=false</code> tier by tier in dependency order: hub and firewall, then DNS, then network-dependent workloads, then the rest. Each tier is approved on its own, because a downstream plan is only valid once its upstream is applied.</p>
+    <p>It is gated twice: the approval here, plus the DR GitHub Environment's required reviewers enforcing it server-side. After each tier, write the post-apply residue (firewall IP, hub IPs) back to the blackboard, then move on.</p>`},
+
+  pipeline:{k:'Terraform / cloud · §2.3, §16.12',i:'pipe',io:['the real plan/apply'],h:`
+    <p>The existing DR pipeline runs every real plan and apply. The agents only trigger it (<code>gh workflow run</code>) and read results (<code>gh run view</code> and <code>watch</code>). The only Terraform that runs locally is Mode 1's <code>fmt</code> and <code>validate</code>, which is config-only with no backend.</p>
+    <p>Its per-component job stanzas are regenerated by resolve.mjs from the computed apply order, in the same reviewed pull request as the roots, so the existing pipeline structure stays intact.</p>`},
+
+  ghlogs:{k:'Terraform / cloud · §8',i:'doc',io:['plan/apply output'],h:`
+    <p>The plan and apply output from a DR pipeline run. The Plan Validator reads it read-only to classify any failure, and it is the input to Phase-5 triage.</p>`},
+
+  end:{k:'Boundary · §1, §17',i:'flag',io:['build done','customer data plane'],h:`
+    <p>The build's job ends at infrastructure up and running per the generated Terraform. Stateful roots (SQL, storage, messaging, vaults) are generated empty on purpose.</p>
+    <p>What follows belongs to the customer, never to an agent:</p>
+    <ul>
+      <li><strong>Populate</strong>: restore data, and GitOps deploys the workloads onto the DR cluster.</li>
+      <li><strong>Cutover</strong>: customer-led, gated routing of live traffic to DR at the edge and DNS.</li>
+      <li><strong>Failback</strong>: route back once the source recovers. Since the source was never torn down, this is a routing change, not a rebuild.</li>
+      <li><strong>Clean up</strong>: a future, fully-gated <code>/dr-build cleanup</code> tears down the Phase-2 resources, the only destroy the agents ever do.</li>
+    </ul>
+    <div class="ref">One seam: Key Vaults boot already populated via external KV replication, so the build only wires workloads to the populated vault and never owns secret population.</div>`},
+};
+
+// ===================== render =====================
+const canvas=document.getElementById('canvas');
+const wires=document.getElementById('wires');
+canvas.style.width=WORLD_W+'px'; canvas.style.height=WORLD_H+'px';
+wires.setAttribute('width',WORLD_W); wires.setAttribute('height',WORLD_H);
+wires.setAttribute('viewBox',`0 0 ${WORLD_W} ${WORLD_H}`);
+
+// bands
+BANDS.forEach(b=>{
+  const d=document.createElement('div');
+  d.className='band';
+  d.style.cssText=`left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px;`+
+    `border-color:${b.c}40;background:${b.c}0a;`;
+  d.innerHTML=`<span class="lbl" style="color:${b.c}">${b.t}</span>`;
+  canvas.appendChild(d);
+});
+
+// arrow markers: idle, gate, hi(ghlight)
+const MK={idle:C.line2,gate:C.danger,hi:C.accent};
+let defs='<defs>';
+for(const [k,c] of Object.entries(MK))
+  defs+=`<marker id="ar-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`;
+defs+='</defs>';
+wires.innerHTML=defs;
+
+// router
+function route(a,b,opt){
+  const ac={x:a.x+a.w/2,y:a.y+a.h/2}, bc={x:b.x+b.w/2,y:b.y+b.h/2};
+  if(opt&&opt.lane!=null){
+    const gx=opt.lane;
+    const sx=(gx>ac.x)?a.x+a.w:a.x, sy=ac.y;
+    const ex=(gx>bc.x)?b.x+b.w:b.x, ey=bc.y;
+    return {pts:[[sx,sy],[gx,sy],[gx,ey],[ex,ey]], lp:{x:gx,y:(sy+ey)/2}};
+  }
+  if(opt&&opt.hlane!=null){   // horizontal channel - route via a clear y above/below the boxes
+    const gy=opt.hlane;
+    const sx=ac.x, sy=(gy>ac.y)?a.y+a.h:a.y;
+    const ex=bc.x, ey=(gy>bc.y)?b.y+b.h:b.y;
+    return {pts:[[sx,sy],[sx,gy],[ex,gy],[ex,ey]], lp:{x:(sx+ex)/2,y:gy}};
+  }
+  const dx=bc.x-ac.x, dy=bc.y-ac.y;
+  if(Math.abs(dx)>=Math.abs(dy)){
+    const right=dx>0;
+    const sx=right?a.x+a.w:a.x, sy=ac.y, ex=right?b.x:b.x+b.w, ey=bc.y;
+    const mx=(sx+ex)/2;
+    return {pts:[[sx,sy],[mx,sy],[mx,ey],[ex,ey]], lp:{x:mx,y:(sy+ey)/2}};
+  } else {
+    const down=dy>0;
+    const sy=down?a.y+a.h:a.y, sx=ac.x, ey=down?b.y:b.y+b.h, ex=bc.x;
+    if(Math.abs(sx-ex)<2) return {pts:[[sx,sy],[ex,ey]], lp:{x:sx+12,y:(sy+ey)/2}};
+    const my=(sy+ey)/2;
+    return {pts:[[sx,sy],[sx,my],[ex,my],[ex,ey]], lp:{x:(sx+ex)/2,y:my}};
+  }
+}
+
+const edgeEls=[];
+const labelLayer=document.createElementNS('http://www.w3.org/2000/svg','g');  // labels paint above every wire
+wires.appendChild(labelLayer);
+EDGES.forEach(([f,t,lab,type,opt],i)=>{
+  const {pts,lp}=route(N[f],N[t],opt);
+  const d=pts.map(p=>`${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+  const isGate=type==='gate';
+  const stroke=isGate?C.danger:C.line2;
+  const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+  const poly=document.createElementNS('http://www.w3.org/2000/svg','polyline');
+  poly.setAttribute('points',d);
+  poly.setAttribute('fill','none');
+  poly.setAttribute('stroke',stroke);
+  poly.setAttribute('stroke-width', type==='flow'?2:1.6);
+  poly.setAttribute('stroke-linejoin','round');
+  if(isGate) poly.setAttribute('stroke-dasharray','6 5');
+  poly.setAttribute('marker-end',`url(#ar-${isGate?'gate':'idle'})`);
+  poly.setAttribute('opacity','0.9');
+  g.appendChild(poly);
+  let lg=null;
+  if(lab){
+    const lo=(opt&&opt.lo)||[0,0];
+    const lx=lp.x+lo[0], ly=lp.y-3+lo[1];
+    lg=document.createElementNS('http://www.w3.org/2000/svg','g');
+    const bg=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    bg.setAttribute('fill',C.bg); bg.setAttribute('rx','3');
+    lg.appendChild(bg);
+    const tx=document.createElementNS('http://www.w3.org/2000/svg','text');
+    tx.setAttribute('x',lx); tx.setAttribute('y',ly);
+    tx.setAttribute('font-size','10'); tx.setAttribute('text-anchor','middle');
+    tx.setAttribute('fill',C.slate);
+    tx.textContent=lab;
+    lg.appendChild(tx);
+    labelLayer.appendChild(lg);
+    const bb=tx.getBBox(), pad=3;
+    bg.setAttribute('x',(bb.x-pad).toFixed(1)); bg.setAttribute('y',(bb.y-1).toFixed(1));
+    bg.setAttribute('width',(bb.width+pad*2).toFixed(1)); bg.setAttribute('height',(bb.height+2).toFixed(1));
+  }
+  wires.appendChild(g);
+  edgeEls.push({g,poly,f,t,isGate,lg});
+});
+wires.appendChild(labelLayer);   // re-append so labels sit on top of all wires
+
+// nodes
+const nodeEls={};
+NODES.forEach(n=>{
+  const col = n.gate ? C.danger : TIER[n.tier];
+  const el=document.createElement('div');
+  el.className='node tier-'+n.tier+(n.gate?' gate':'');
+  el.style.cssText=`left:${n.x}px;top:${n.y}px;width:${n.w}px;height:${n.h}px;`;
+  const chip = n.step!=null
+    ? `<div class="chip num">${n.step}</div>`
+    : `<div class="chip">${chipSvg(n.icon,col)}</div>`;
+  const pill=n.pill?`<span class="pill">${n.pill}</span>`:'';
+  el.innerHTML=`<span class="bar"></span>${chip}`+
+    `<div class="meta"><div class="ttl"><span>${n.t}</span>${pill}</div><div class="sub">${n.sub}</div></div>`;
+  el.addEventListener('click',ev=>{ ev.stopPropagation(); select(n.id); });
+  canvas.appendChild(el);
+  nodeEls[n.id]=el;
+});
+
+// ===================== selection / drawer =====================
+const drawer=document.getElementById('drawer');
+function select(id){
+  simPause();
+  const det=D[id]; const n=N[id];
+  Object.values(nodeEls).forEach(e=>e.classList.remove('sel','dim','live','livegate','conn'));
+  const connected=new Set([id]);
+  edgeEls.forEach(({poly,f,t,lg})=>{
+    const on = f===id||t===id;
+    poly.parentNode.style.opacity = on?1:0.1;
+    if(lg) lg.style.opacity = on?1:0.1;
+    poly.setAttribute('stroke', on?C.accent:(poly.getAttribute('stroke')));
+    poly.setAttribute('marker-end', on?'url(#ar-hi)':poly.getAttribute('marker-end'));
+    if(on){connected.add(f);connected.add(t);}
+  });
+  Object.entries(nodeEls).forEach(([nid,e])=>{
+    if(nid===id) e.classList.add('sel');
+    else if(!connected.has(nid)) e.classList.add('dim');
+  });
+  if(det){
+    const col = n.gate ? C.danger : TIER[n.tier];
+    const kick=document.getElementById('dkick');
+    kick.style.color=col;
+    kick.innerHTML=`<svg viewBox="0 0 30 30" width="20" height="20"><g transform="translate(15,15)">${icon(det.i,col)}</g></svg><span>${det.k}</span>`;
+    document.getElementById('dttl').textContent=n.t;
+    const io=(det.io||[]).map(c=>`<span class="chip">${c}</span>`).join('');
+    document.getElementById('dbody').innerHTML=(io?`<div class="io">${io}</div>`:'')+det.h;
+    drawer.classList.add('open');
+  }
+}
+function deselect(){
+  drawer.classList.remove('open');
+  Object.values(nodeEls).forEach(e=>e.classList.remove('sel','dim','live','livegate','conn'));
+  edgeEls.forEach(({poly,isGate,lg})=>{
+    poly.parentNode.style.opacity=0.9;
+    if(lg) lg.style.opacity=1;
+    poly.setAttribute('stroke', isGate?C.danger:C.line2);
+    poly.setAttribute('marker-end',`url(#ar-${isGate?'gate':'idle'})`);
+  });
+  simPause(); simEl.classList.remove('on','gate'); simI=-1;   // closing returns to a clean view
+}
+document.getElementById('dclose').addEventListener('click',deselect);
+
+// ===================== pan / zoom =====================
+const vp=document.getElementById('viewport');
+let s=1, tx=0, ty=0;
+function apply(){ canvas.style.transform=`translate(${tx}px,${ty}px) scale(${s})`; }
+function fit(){
+  const r=vp.getBoundingClientRect(), pad=60;
+  s=Math.min((r.width-pad*2)/WORLD_W,(r.height-pad*2)/WORLD_H,1);
+  tx=(r.width-WORLD_W*s)/2;
+  ty=Math.max((r.height-WORLD_H*s)/2,20);
+  apply();
+}
+function zoomAt(cx,cy,factor){
+  const ns=Math.max(0.2,Math.min(2.2,s*factor));
+  const wx=(cx-tx)/s, wy=(cy-ty)/s;
+  s=ns; tx=cx-wx*s; ty=cy-wy*s; apply();
+}
+vp.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const r=vp.getBoundingClientRect();
+  zoomAt(e.clientX-r.left, e.clientY-r.top, e.deltaY<0?1.12:0.89);
+},{passive:false});
+
+let dragging=false, sx=0, sy=0, moved=false;
+vp.addEventListener('pointerdown',e=>{
+  if(e.target.closest('.node')) return;   // let node clicks through
+  dragging=true; moved=false; sx=e.clientX-tx; sy=e.clientY-ty;
+  vp.classList.add('grabbing'); vp.setPointerCapture(e.pointerId);
+});
+vp.addEventListener('pointermove',e=>{ if(!dragging) return; tx=e.clientX-sx; ty=e.clientY-sy; moved=true; apply(); });
+vp.addEventListener('pointerup',e=>{
+  dragging=false; vp.classList.remove('grabbing');
+  if(!moved && e.target===vp) deselect();
+});
+vp.addEventListener('click',e=>{ if(e.target===vp) deselect(); });
+
+document.getElementById('zin').onclick=()=>{const r=vp.getBoundingClientRect();zoomAt(r.width/2,r.height/2,1.18);};
+document.getElementById('zout').onclick=()=>{const r=vp.getBoundingClientRect();zoomAt(r.width/2,r.height/2,0.85);};
+document.getElementById('fit').onclick=fit;
+window.addEventListener('resize',fit);
+
+// ===================== simulation =====================
+// Each beat = a moment in the process: which nodes are live, which edges flow, what's happening.
+const SIM=[
+  {t:'Invoke', nodes:['start'], edges:[],
+   cap:'A platform engineer runs /dr-build. The current main SHA is pinned, so the whole estate builds from that one commit even if a failover runs for hours.'},
+  {t:'Phase 1 · Discover', nodes:['p1','profile'], edges:[['profile','p1']],
+   cap:'Phase 1, in the main loop with no cloud. Scan the source roots and subtract the scope-rules exclusions to get the in-scope list. Inclusions are discovered every run, never catalogued.'},
+  {t:'Phase 1 · Build plan', nodes:['p1','buildplan'], edges:[['p1','buildplan']],
+   cap:'From a static read of each source root, assemble the build plan: what WILL be built, what won’t (and why), and what needs manual work. No Builder spawned yet.'},
+  {t:'Gate · Build plan', nodes:['gate1'], edges:[['p1','gate1']], gate:true,
+   cap:'Human gate. Approve as written, amend the scope, or abort. This is the cheapest place to stop: nothing generated, no agents spawned, no cloud touched.'},
+  {t:'Phase 2 · Fan-out', nodes:['p2','orchestrator','builder','prod','connectivity','profile'], edges:[['gate1','p2'],['p2','orchestrator'],['orchestrator','builder'],['prod','builder'],['connectivity','builder'],['profile','builder']], gate:false,
+   cap:'Phase 2, autonomous in workflows/dr-build.js. The Orchestrator, a thin control plane, spawns one Component Builder per component (parallel, about 10). Each one reads the prod and connectivity roots as immutable truth, plus the transform rules.'},
+  {t:'Phase 2 · Generate', nodes:['builder','drroot','manifests'], edges:[['builder','drroot'],['builder','manifests']],
+   cap:'Every Builder produces two things. First, one DR Terraform root: the same infrastructure described again for the standby region. Second, a manifest, which is a small JSON file it writes to <state-dir>/manifests/<component>.json saying what it produced, what it needed from other components, and what it could not work out. The manifest is the Builder’s own report on its own work, which is why the next two steps check it. Transforms are applied by meaning, never find-and-replace: a blind swap of a region name or an address range would silently corrupt partner IPs and unrelated IDs.'},
+  {t:'Check 1 of 2 · lint.sh', nodes:['lint','drroot'], edges:[['drroot','lint']],
+   cap:'lint.sh answers one question: does anything in the generated files still point at the live production estate? It reads every generated .tf file and fails the component on the old region, the old address ranges, the old DNS and firewall IPs, the old pipeline identity, the old state workspaces, or a non-DR environment tag. It also requires the expected DR markers to be present. It is a plain text search, not a model, so it has no judgement to be talked out of. Comments are stripped first, so a note explaining what the original looked like never trips it. Necessary but not sufficient: a human reading the plan is the real check.'},
+  {t:'Check 2 of 2 · reconcile.mjs', nodes:['reconcile','manifests','drroot'], edges:[['manifests','reconcile']],
+   cap:'reconcile.mjs enforces one rule: flag, don’t guess. A Builder that cannot work out a value another component owns must leave the gap open and declare it, never invent something plausible. This check makes that honest by comparing the two sides: every gap declared in the manifest must appear as a marked gap (a "# DR-DEFER" line) in the Terraform, and every marked gap in the Terraform must be declared in the manifest. That catches both ways a model goes wrong: filling in a value it should have deferred, or leaving a hole it never reported. Also mechanical, no model involved.'},
+  {t:'Phase 3 · Graph', nodes:['p3','resolve','manifests'], edges:[['p2','p3'],['p3','resolve'],['manifests','resolve']],
+   cap:'The Builders never spoke to each other, so nothing yet knows what has to exist before what. resolve.mjs reads all the manifests together and works it out: it matches what each component produces against what the others need, builds the dependency map, and turns it into a numbered order to create things in. If it finds a loop (A needs B, B needs A) it stops that part of the estate and escalates to a human rather than guessing its way out, while the rest of the run carries on.'},
+  {t:'Phase 3 · Run state', nodes:['resolve','blackboard','depgraph','runreport','pipeline'], edges:[['resolve','blackboard'],['resolve','depgraph'],['resolve','runreport'],['resolve','pipeline']],
+   cap:'The same script then writes the run down so a colleague, or a new session tomorrow, can pick it up: blackboard.md (the open questions still to be answered), dependency-graph.md (the map and the order), run-report.md (what actually got built, and what is blocked). It also rewrites the per-component job blocks inside the DR pipeline file from the computed order. That is the one write the Orchestrator is allowed to make outside a generated root, and it is reviewed in the same pull request.'},
+  {t:'GitOps · Regenerate overlay', nodes:['p3','pg','gitops'], edges:[['p3','pg'],['pg','gitops']],
+   cap:'Terraform builds the infrastructure; a separate set of files tells the Kubernetes cluster what to run on it. gitops-rewrite.mjs makes the DR copy of those: it takes every platform component from the source GitOps tree the profile points at, copies them to the DR tree, and swaps every environment-specific value (region, key vault names, subnets, address ranges, ownership tags, paths) for its DR equivalent, using the same rules that built the Terraform estate. The production files are never touched; the DR copy is regenerated each run, so it cannot quietly drift out of date.'},
+  {t:'GitOps · Guard & residue', nodes:['gitops','gitopsdr'], edges:[['gitops','gitopsdr']],
+   cap:'Then it checks its own work. A search for any surviving production token fails the build outright. Anything it genuinely cannot know yet is marked instead of guessed: POST-APPLY placeholders for values that only exist once the DR cluster and disks are created, and one DECIDE item (the on-prem allow-list) that a human has to confirm. Both are settled in the skill, with a person present, before anything is committed.'},
+  {t:'Hand-off', nodes:['handoff'], edges:[['pg','handoff'],['handoff','p4']],
+   cap:'Hand-off. The generated roots, manifests, apply order, and the GitOps overlay cross from the autonomous workflow back to the interactive main loop. From here every step touches the cloud and is gated.'},
+  {t:'Gate · Plan', nodes:['p4','plangate','pipeline'], edges:[['p4','plangate'],['plangate','pipeline']], gate:true,
+   cap:'Human gate, Phase 4. Trigger the DR pipeline with plan_only=true in dependency order. A human reading each plan is the real check; the lint is only a tripwire.'},
+  {t:'Phase 4 · Plan output', nodes:['pipeline','ghlogs'], edges:[['pipeline','ghlogs']],
+   cap:'The existing DR pipeline runs the real plan and the output lands in the gh run logs. Cold plan-only is partial by design: a downstream root cannot fully validate until its upstreams are applied.'},
+  {t:'Phase 5 · Triage', nodes:['p5','validator','ghlogs'], edges:[['p4','p5'],['ghlogs','validator']],
+   cap:'Phase 5. On a plan or apply failure, a Plan Validator reads the logs read-only and classifies the error into a structured verdict. It never edits code or triggers pipelines.'},
+  {t:'Phase 5 · Route fix', nodes:['validator','builder','remediator'], edges:[['validator','builder'],['validator','remediator']],
+   cap:'Route the verdict: a config fix re-runs the owning Builder (resumable workflow); an ordering issue adjusts the apply order; a region-parity / won’t-come-up failure escalates to Mode 3.'},
+  {t:'Mode 3 · Remediate', nodes:['remediator','drroot','regiongaps'], edges:[['remediator','drroot'],['remediator','regiongaps']],
+   cap:'Mode 3, adaptive remediation of one failing service. Propose alternatives that keep the invariants, let an engineer pick one, apply it surgically, then auto-draft a PR to region-gaps.md so the fix is not lost.'},
+  {t:'Gate · Apply', nodes:['p6','applygate','pipeline','blackboard'], edges:[['p5','p6'],['p6','applygate'],['applygate','pipeline'],['p6','blackboard']], gate:true,
+   cap:'Human gate per tier, failover only. Phase 6 flips plan_only=false one tier at a time (hub and firewall, then DNS, then workloads, then the rest). Gated twice. Post-apply residue is captured back to the blackboard.'},
+  {t:'Done', nodes:['end'], edges:[['p6','end']],
+   cap:'Infrastructure up and running per the generated Terraform. The build ends here. The customer owns the data plane: restore data, cut over traffic, and fail back when the source region recovers.'},
+];
+const simEl=document.getElementById('sim');
+const playBtn=document.getElementById('play');
+let simI=-1, simPlaying=false, simTimer=null, flyRAF=null, simRate=1;
+
+function flyTo(ntx,nty,ns){
+  cancelAnimationFrame(flyRAF);
+  const t0=performance.now(), d=440, sx0=tx, sy0=ty, ss0=s;
+  (function step(now){
+    let k=Math.min(1,(now-t0)/d); k=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    tx=sx0+(ntx-sx0)*k; ty=sy0+(nty-sy0)*k; s=ss0+(ns-ss0)*k; apply();
+    if(k<1) flyRAF=requestAnimationFrame(step);
+  })(performance.now());
+}
+function focusNodes(ids){
+  const r=vp.getBoundingClientRect();
+  let minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9,cx=0,cy=0,n=0;
+  ids.forEach(id=>{const k=N[id]; if(!k)return;
+    minx=Math.min(minx,k.x);miny=Math.min(miny,k.y);maxx=Math.max(maxx,k.x+k.w);maxy=Math.max(maxy,k.y+k.h);
+    cx+=k.x+k.w/2; cy+=k.y+k.h/2; n++;});
+  if(!n) return; cx/=n; cy/=n; const pad=170;
+  let sc=Math.min(r.width/(maxx-minx+pad*2), r.height/(maxy-miny+pad*2));
+  sc=Math.max(.45,Math.min(sc,.9));
+  flyTo(r.width/2-cx*sc, r.height/2-cy*sc, sc);
+}
+function simClear(){
+  Object.values(nodeEls).forEach(e=>e.classList.remove('live','livegate','dim','conn'));
+  edgeEls.forEach(({g,poly,isGate,lg})=>{
+    g.style.opacity=0.9; if(lg) lg.style.opacity=1; poly.classList.remove('flow');
+    poly.setAttribute('stroke', isGate?C.danger:C.line2);
+    poly.setAttribute('marker-end',`url(#ar-${isGate?'gate':'idle'})`);
+  });
+}
+function simShow(i){
+  if(i<0||i>=SIM.length) return;
+  simI=i; const b=SIM[i];
+  drawer.classList.remove('open');
+  simClear();
+  const live=new Set(b.nodes);
+  const lit=new Set(b.nodes);                                  // edge endpoints count as connected context
+  (b.edges||[]).forEach(e=>{ lit.add(e[0]); lit.add(e[1]); });
+  Object.entries(nodeEls).forEach(([id,e])=> e.classList.add(live.has(id)?'live':(lit.has(id)?'conn':'dim')));
+  if(b.gate) b.nodes.forEach(id=> nodeEls[id] && nodeEls[id].classList.add('livegate'));
+  const want=new Set((b.edges||[]).map(e=>e[0]+'>'+e[1]));
+  edgeEls.forEach(({g,poly,f,t,lg})=>{
+    if(want.has(f+'>'+t)){
+      g.style.opacity=1; if(lg) lg.style.opacity=1; poly.classList.add('flow');
+      poly.setAttribute('stroke', b.gate?C.danger:C.accent);
+      poly.setAttribute('marker-end', b.gate?'url(#ar-gate)':'url(#ar-hi)');
+    } else { g.style.opacity=0.06; if(lg) lg.style.opacity=0.06; }
+  });
+  simEl.classList.add('on'); simEl.classList.toggle('gate', !!b.gate);
+  simEl.querySelector('.step').textContent=(b.gate?'⚠ ':'')+b.t;
+  simEl.querySelector('.count').textContent=`${i+1} / ${SIM.length}`;
+  simEl.querySelector('.cap').textContent=b.cap;
+  simEl.querySelector('.fill').style.width=((i+1)/SIM.length*100)+'%';
+  focusNodes(b.nodes);
+}
+function simSchedule(){
+  clearTimeout(simTimer);
+  if(!simPlaying) return;
+  const b=SIM[simI];
+  const dwell=((b&&b.gate)?1300:900)/simRate;   // base pace, divided by the chosen speed
+  simTimer=setTimeout(()=>{
+    if(!simPlaying) return;
+    if(simI+1>=SIM.length){ simPause(); return; }
+    simShow(simI+1); simSchedule();
+  }, dwell);
+}
+function simPlay(){
+  if(simI>=SIM.length-1||simI<0) simShow(0);
+  simPlaying=true; playBtn.textContent='⏸ Pause'; simSchedule();
+}
+function simPause(){ simPlaying=false; clearTimeout(simTimer); if(playBtn) playBtn.textContent='▶ Play'; }
+function simReset(){ simPause(); simClear(); simEl.classList.remove('on','gate'); simI=-1; fit(); }
+
+playBtn.addEventListener('click',()=> simPlaying?simPause():simPlay());
+document.getElementById('speed').addEventListener('change',e=>{
+  simRate=parseFloat(e.target.value)||1;
+  if(simPlaying) simSchedule();      // re-time the current step at the new speed
+});
+document.getElementById('tour').addEventListener('click',()=>{ simPause(); simShow(0); });   // start the tour; advance with the banner's Next
+document.getElementById('snext').addEventListener('click',()=>{ simPause(); simShow(simI<0?0:Math.min(simI+1,SIM.length-1)); });
+document.getElementById('sprev').addEventListener('click',()=>{ simPause(); simShow(simI<0?0:Math.max(0,simI-1)); });
+
+requestAnimationFrame(()=>requestAnimationFrame(()=>{ fit(); }));   // open on the whole diagram, nothing selected
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "component": "storage",
+  "source_root": "terraform/prod/storage",
+  "target_root": "fixtures/clean-root",
+  "tfc_workspace": "tfc-dr-storage",
+  "produces": ["storage account ctsodrprodneusa"],
+  "consumes": [
+    {
+      "what": "hub route table id",
+      "from": "hub",
+      "via": "post-apply",
+      "status": "blackboard"
+    }
+  ],
+  "prereqs": [],
+  "notes": ["Claims to defer a value it never marked, and hardcoded the one it did mark."]
+}

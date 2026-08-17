@@ -1,0 +1,4 @@
+{"component":"workload-identity","source_root":"terraform/prod/workload-identity","target_root":"dr/workload-identity","tfc_workspace":"tfc-dr-workload-identity",
+ "produces":["workload identities"],
+ "consumes":[{"what":"aks cluster","from":"aks","via":"data-rename","status":"resolved"}],
+ "prereqs":[],"notes":[]}

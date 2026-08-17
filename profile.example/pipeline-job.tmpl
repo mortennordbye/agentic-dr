@@ -1,0 +1,14 @@
+  {{job}}:
+    {{needs}}
+    if: >-
+      always() &&
+      (fromJson(github.event.inputs.ignore_needs || 'false') || {{needs_expr}}) &&
+      (github.event.inputs.components_to_deploy == 'all' || contains(github.event.inputs.components_to_deploy, '{{component}}'))
+    uses: ./.github/workflows/terraform-apply-template.yml
+    with:
+      terraform_directory: "{{target_root}}"
+      environment: "dr"
+      runner: "ubuntu-latest"
+      plan_only: ${{ github.event_name == 'workflow_dispatch' && fromJson(github.event.inputs.plan_only) || false }}
+      terraform_version: "latest"
+    secrets: inherit

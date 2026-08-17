@@ -1,0 +1,3 @@
+{"component":"gamma","source_root":"terraform/prod/gamma","target_root":"dr/gamma","tfc_workspace":"tfc-dr-gamma",
+ "produces":["gamma out"],"consumes":[{"what":"beta out","from":"beta","via":"remote-state","status":"resolved"}],
+ "prereqs":[],"notes":["Fixture: downstream of the seeded alpha/beta cycle. It is clean in itself, so nothing but the cycle can keep it out of the apply order — which is exactly what must happen: the value it waits for is never produced."]}

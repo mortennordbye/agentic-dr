@@ -1,0 +1,27 @@
+# Fixture for engine/gitops-rewrite.mjs. The copy under source/ is the prod input; the copy under
+# expected/ is the golden output — regenerate expected/, never hand-edit it.
+#
+# The network-facing half of the ingress component: one value per remaining class, so a rule kind
+# that silently stopped loading shows up as a diff rather than as a still-green run.
+#
+# The comments below name no source token on purpose. The rewrite is text-level and would rewrite
+# them too, which would leave the expected/ copy describing values it no longer contains.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ctso-dr-prod-neu-ingress-config
+  namespace: platform
+data:
+  # AUTO: the general CIDR rule covers this one.
+  vnet-cidr: 10.200.0.0/16
+  # AUTO, longest-first: the hub subnet is re-planned in DR rather than swapped straight across, so
+  # the specific rule must win over the general prefix rule that also matches this value.
+  hub-subnet-cidr: 10.200.8.0/24
+  # DECIDE, default kept: on-prem reaches DR over the same links, so the allowlist usually stands.
+  trusted-source-ranges: 10.150.0.0/16
+  # DECIDE, no default: keeping the source zone would point the DR cluster's DNS controller at live
+  # production records, so a sentinel is stamped instead.
+  external-dns-zone: __DR_DECIDE__external-dns-zone
+  # CUTOVER: deliberately untouched, and deliberately absent from forbidden_residual. Moving traffic
+  # is a customer-led routing step, not something the build rewrites.
+  public-hostname: storefront.contoso.cloud

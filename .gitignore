@@ -1,0 +1,8 @@
+# Run artifacts. The framework's own state files are generated into the CONSUMING repo, never here,
+# so the only things that land in this tree are test scratch and editor noise.
+*.log
+.DS_Store
+
+# A private supplementary scrub list must never be committed — that is the entire point of keeping
+# it outside the repo. See docs/scrub-gate.md.
+private-*patterns*.txt

@@ -1,0 +1,19 @@
+{
+  "name": "agentic-dr",
+  "displayName": "Agentic DR",
+  "version": "0.1.0",
+  "description": "Regenerate a disaster-recovery infrastructure estate on demand from live production IaC, instead of maintaining a parallel copy that drifts.",
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Morten Victor Nordbye"
+  },
+  "repository": "https://github.com/mortennordbye/agentic-dr",
+  "keywords": [
+    "disaster-recovery",
+    "terraform",
+    "azure",
+    "infrastructure-as-code",
+    "gitops",
+    "agents"
+  ]
+}

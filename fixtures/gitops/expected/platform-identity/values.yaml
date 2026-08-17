@@ -1,0 +1,21 @@
+# Fixture for engine/gitops-rewrite.mjs. The copy under source/ is the prod input; the copy under
+# expected/ is the golden output — regenerate expected/, never hand-edit it.
+#
+# The POST-APPLY component, and the exhibit for why the rewrite order is load-bearing.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ctso-dr-prod-neu-identity-values
+  namespace: platform
+data:
+  # KEEP: the tenant does not change in a DR region.
+  tenant-id: 00000000-0000-0000-0000-000000000002
+  # POST-APPLY, kind line-value: a new DR identity gets a new client id, which does not exist until
+  # the identity root applies. The whole scalar is replaced — the trailing comment goes with it,
+  # because the value is being deferred anyway.
+  client-id: __DR_POST_APPLY__ingress-identity-client-id
+  # POST-APPLY, kind token — THE ORDERING EXHIBIT. This id contains a token the AUTO sweep also
+  # matches. Run AUTO first and you get a fully rewritten resource id that names a resource group
+  # and an identity nobody ever created: plausible, guard-clean, and pointing at nothing. Stamping
+  # the sentinel first is what stops that.
+  resource-id: __DR_POST_APPLY__ingress-identity-resource-id

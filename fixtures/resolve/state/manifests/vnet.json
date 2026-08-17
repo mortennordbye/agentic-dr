@@ -1,0 +1,2 @@
+{"component":"vnet","source_root":"terraform/conn/vnet","target_root":"dr/vnet","tfc_workspace":"tfc-dr-vnet",
+ "produces":["dr vnet","dr subnets"],"consumes":[],"prereqs":["quota confirmed in the DR region"],"notes":[]}

@@ -1,0 +1,23 @@
+{
+  "component": "storage",
+  "source_root": "terraform/prod/storage",
+  "target_root": "fixtures/clean-root",
+  "tfc_workspace": "tfc-dr-storage",
+  "produces": ["storage account ctsodrprodneusa"],
+  "consumes": [
+    {
+      "what": "firewall private IP of the DR hub",
+      "from": "hub",
+      "via": "post-apply",
+      "status": "blackboard"
+    },
+    {
+      "what": "DR vnet name",
+      "from": "vnet",
+      "via": "data-rename",
+      "status": "resolved"
+    }
+  ],
+  "prereqs": ["Terraform Cloud workspace tfc-dr-storage exists in Local execution mode"],
+  "notes": ["Storage is generated empty by design; data restore is the customer's data plane."]
+}

@@ -1,0 +1,61 @@
+{
+  "_comment": "FIXTURE PATTERNS for tools/test.sh, not a profile. Same schema as profile.example/gitops-substitutions.json (docs/gitops-substitutions-schema.md). Paths are relative to --repo, which the test points at a temp copy of fixtures/gitops/, so the generated overlay never lands in the source tree.",
+
+  "source_dir": "source",
+  "target_dir": "out",
+
+  "_exclude_comment": "One live exclusion (the data-plane component) and one deliberately stale entry. The stale one is the point: a pinned exclusion that no longer matches a real component must be reported, never swallowed.",
+  "exclude": ["data-plane-app", "retired-legacy-app"],
+
+  "post_apply_placeholder_prefix": "__DR_POST_APPLY__",
+  "decide_placeholder_prefix": "__DR_DECIDE__",
+
+  "_auto_comment": "The last two pairs are the longest-first exhibit, and their file order is deliberately the WRONG one: the general CIDR prefix also matches the hub subnet, so applying these in the order written would rewrite the subnet with the general mapping and the specific rule would then find nothing. Only the length sort produces the expected output — which is what makes the assertion able to fail.",
+  "auto": [
+    { "from": "westeurope", "to": "northeurope", "why": "region token" },
+    { "from": "ctso-prod-weu-", "to": "ctso-dr-prod-neu-", "why": "resource name prefix" },
+    { "from": "10.100.", "to": "10.200.", "why": "production CIDR" },
+    { "from": "10.100.12.", "to": "10.200.8.", "why": "hub subnet, re-planned in DR rather than swapped straight across" }
+  ],
+
+  "post_apply": [
+    {
+      "slug": "ingress-identity-resource-id",
+      "kind": "token",
+      "match": "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/ctso-prod-weu-identity-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ctso-prod-weu-ingress-id",
+      "what": "the DR ingress identity resource id",
+      "why": "the id carries the source name prefix, so a token-by-token rewrite yields a plausible id that points at nothing"
+    },
+    {
+      "slug": "ingress-identity-client-id",
+      "kind": "line-value",
+      "match": "client-id",
+      "what": "the DR ingress workload identity client id",
+      "why": "DR identities are new, with new client ids that do not exist until the identity root applies"
+    }
+  ],
+
+  "decide": [
+    {
+      "slug": "gateway-trusted-ips",
+      "match": "10.150.0.0/16",
+      "default_kept": true,
+      "what": "on-prem source ranges trusted by the internal gateway",
+      "why": "on-prem reaches DR over the same links, so keeping the source list is usually right — but confirm it"
+    },
+    {
+      "slug": "external-dns-zone",
+      "match": "apps.prod.contoso.cloud",
+      "default_kept": false,
+      "what": "the DNS zone the cluster's DNS controller writes into",
+      "why": "keeping the source zone would have the DR cluster write live production records"
+    }
+  ],
+
+  "_forbidden_residual_comment": "The completeness guard. The cutover hostname is deliberately absent: it legitimately survives into the DR overlay.",
+  "forbidden_residual": [
+    { "pattern": "ctso-prod-", "why": "source resource name prefix survived the rewrite" },
+    { "pattern": "westeurope", "why": "source region token survived the rewrite" },
+    { "pattern": "10\\.10[0-2]\\.", "why": "source CIDR survived the rewrite" }
+  ]
+}

@@ -1,0 +1,31 @@
+# Fixture for engine/gitops-rewrite.mjs. The copy under source/ is the prod input; the copy under
+# expected/ is the golden output — regenerate expected/, never hand-edit it.
+#
+# This file carries the plain AUTO cases: a name prefix, a bare region token, and a region token
+# living inside a URL.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ctso-dr-prod-neu-ingress
+  namespace: platform
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ingress
+  template:
+    metadata:
+      labels:
+        app: ingress
+    spec:
+      serviceAccountName: ctso-dr-prod-neu-ingress-sa
+      containers:
+        - name: gateway
+          # KEEP: the registry is environment-independent, and no rule touches it.
+          image: registry.internal.contoso.cloud/platform/gateway:1.9.3
+          env:
+            - name: REGION
+              value: northeurope
+            # AUTO reaches inside a URL as readily as a bare token: the rewrite is text-level.
+            - name: CONFIG_ENDPOINT
+              value: https://config.internal.northeurope.contoso.cloud
