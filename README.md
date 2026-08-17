@@ -25,12 +25,13 @@ It runs as a [Claude Code](https://code.claude.com) plugin, in your repo, as you
 no API token, and no long-running agent.
 
 ```
-/agentic-dr:dr-build dry-run       # generate + lint/validate. No cloud. Run this constantly.
-/agentic-dr:dr-build failover      # generate → gated staged plan → gated staged apply → triage
-/agentic-dr:dr-build fix <service> # adaptively remediate one service that will not come up in DR
+/agentic-dr:dry-run       # generate + lint/validate. No cloud. Run this constantly.
+/agentic-dr:failover      # generate → gated staged plan → gated staged apply → triage
+/agentic-dr:fix <service> # adaptively remediate one service that will not come up in DR
 ```
 
-Plugin skills are namespaced, hence the prefix.
+Plugin skills are namespaced, hence the prefix. One skill per intent, so typing `/agentic-dr:`
+lists what the system can do.
 
 ---
 
@@ -56,7 +57,8 @@ judgement is required. That line runs through the whole design.
 
 ```
       ┌─────────────────────────────────────────────────────────┐
-      │  /agentic-dr:dr-build skill  (main loop: discovery, every gate)     │
+      │  entrypoint skill: dry-run │ failover │ fix             │
+      │  (main loop: discovery, every gate)                     │
       └───────────────┬─────────────────────────────────────────┘
                       │  approved build plan + in-scope list
       ┌───────────────▼─────────────────────────────────────────┐
@@ -143,7 +145,7 @@ cp -R profile.example <your-repo>/agentic-dr/profile
 bash tools/test.sh
 
 # 4. Generate, without touching the cloud
-/agentic-dr:dr-build dry-run
+/agentic-dr:dry-run
 ```
 
 To try it without installing, clone the repo and run `claude --plugin-dir /path/to/agentic-dr`.
@@ -171,7 +173,7 @@ agentic-dr/
 ├── engine/            # the deterministic scripts. No LLM: lint, reconcile, resolve, gitops-rewrite
 ├── workflows/         # the Orchestrator, a committed Claude Code Workflow script
 ├── agents/            # the three LLM personas: builder, plan validator, remediator
-├── skills/            # the /agentic-dr:dr-build entrypoint and the profile-maintenance skill
+├── skills/            # the three entrypoints — dry-run, failover, fix — and profile maintenance
 ├── docs/              # the profile contract, state-file schemas, rule formats, operating guide
 ├── profile.example/   # a complete fictional profile — the only per-estate layer
 ├── fixtures/          # what makes the deterministic half verifiable standalone

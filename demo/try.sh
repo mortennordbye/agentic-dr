@@ -120,7 +120,7 @@ if [[ $INTERACTIVE -eq 0 ]]; then
   say ""
   say "    bash $PLUGIN/engine/lint.sh terraform/prod/aks agentic-dr/profile/lint-patterns.txt"
   say "    node $PLUGIN/engine/gitops-rewrite.mjs"
-  say "    claude --plugin-dir $PLUGIN     then:  /agentic-dr:dr-build dry-run"
+  say "    claude --plugin-dir $PLUGIN     then:  /agentic-dr:dry-run"
   say ""
   exit 0
 fi
@@ -154,13 +154,13 @@ if step "3/3" "The full build" \
     say "    cd $TARGET && claude --plugin-dir $PLUGIN"
   elif ask "  launch Claude Code here now? [y/N]" "n"; then
     say ""
-    say "  ${B}Once it opens, run:${R}  /agentic-dr:dr-build dry-run"
+    say "  ${B}Once it opens, run:${R}  /agentic-dr:dry-run"
     say ""
     exec claude --plugin-dir "$PLUGIN"
   else
     say "  when you are ready:"
     say "    cd $TARGET && claude --plugin-dir $PLUGIN"
-    say "    /agentic-dr:dr-build dry-run"
+    say "    /agentic-dr:dry-run"
   fi
 fi
 

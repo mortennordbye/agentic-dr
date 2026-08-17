@@ -170,6 +170,10 @@ turns the suite red rather than shipping quietly:
   caller gets a dispatch shim instead of the approval gates.
 - **Nothing resolves relative to a script's own location.** The engine ships in the plugin, the
   profile ships in the estate; neither may assume where the other is.
+- **`${CLAUDE_PLUGIN_ROOT}` is substituted in skill and agent content only.** `docs/` is *read* by
+  a skill, not loaded as one, so the variable arrives unexpanded there and silently yields
+  `/engine`. `docs/build-procedure.md` says `<plugin-root>`; the skill that sends you there states
+  the real path.
 - **The deterministic half must stay deterministic.** `engine/` contains no LLM call and never
   will. That is what makes it a correctness oracle rather than another opinion.
 
@@ -180,8 +184,9 @@ agentic-dr/
 ├── engine/          # the deterministic scripts — no LLM: lint, reconcile, resolve, gitops-rewrite
 ├── workflows/       # the Orchestrator (a Claude Code Workflow script)
 ├── agents/          # the three LLM personas
-├── skills/          # /agentic-dr:dr-build and the profile-maintenance skill
-├── docs/            # the profile contract, state-file schemas, rule formats, operating guide
+├── skills/          # the three entrypoints (dry-run, failover, fix) + profile maintenance
+├── docs/            # profile contract, state-file schemas, rule formats, operating guide,
+│                  #   and build-procedure.md — Phases 1–3, shared by dry-run and failover
 ├── profile.example/ # a fictional filled-in profile
 ├── fixtures/        # what makes the deterministic half verifiable standalone
 └── tools/           # the test suite and the release gate
