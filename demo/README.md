@@ -1,7 +1,7 @@
 # A fictional estate, for trying the engine without one
 
 Everything here is invented: the customer, the regions, the address ranges, the GUIDs. It exists so
-`/agentic-dr:dr-build dry-run` has something real to discover, read and transform, and so the
+`/agentic-dr:dry-run` has something real to discover, read and transform, and so the
 deterministic scripts can be run against something that looks like an estate rather than a fixture.
 
 It is deliberately tiny, and deliberately shaped to exercise every part of a run.
@@ -43,7 +43,7 @@ By hand it is the same four steps:
 cp -R demo ~/agentic-dr-demo && cd ~/agentic-dr-demo
 git init -q && git add -A && git commit -qm "fictional estate"
 claude --plugin-dir /path/to/agentic-dr
-/agentic-dr:dr-build dry-run
+/agentic-dr:dry-run
 ```
 
 The initial commit matters: discovery pins the current commit, so an estate with no commits has

@@ -1,22 +1,18 @@
----
-name: dr-build
-description: >-
-  Generate and operate the Phase-2 disaster-recovery Terraform estate on demand from current main
-  (ARCHITECTURE.md). Routes the three modes — dry-run (generate + lint/validate,
-  optional plan-only), failover (generate → gated staged plan → gated staged apply → triage), and
-  fix (Mode 3 adaptive remediation of one failing service). Enforces the hard rule: NEVER trigger a
-  pipeline (even plan_only) without explicit user approval. Use when asked to build, dry-run, fail
-  over, or fix the DR estate.
----
+# The build procedure — Phases 1–3
 
-# DR build — generate the Phase-2 DR estate on demand
+**Shared by `/agentic-dr:dry-run` and `/agentic-dr:failover`.** Both entrypoints regenerate the DR
+estate the same way; they differ only in what happens *after* it exists. This file is that common
+half, so there is one copy of it to keep correct. Read it in full when either skill sends you here.
 
-This skill is the entrypoint to the agentic DR build (blueprint: `ARCHITECTURE.md`). It
-*regenerates* the DR estate from current `main` rather than maintaining a parallel pipeline that
-would drift. You — the main loop — run the **non-fan-out** work: Phase-1 discovery, the build-plan
-gate, and every gated cloud step. The fan-out generation is the committed Workflow
-`workflows/dr-build.js`; the deterministic checks/rewrites are the committed scripts
-`engine/lint.sh`, `reconcile.mjs`, `resolve.mjs`, `gitops-rewrite.mjs`.
+You — the main loop — run the **non-fan-out** work: Phase-1 discovery, the build-plan gate, and every
+gated cloud step. The fan-out generation is the committed Workflow `workflows/dr-build.js`; the
+deterministic checks/rewrites are the committed scripts `engine/lint.sh`, `reconcile.mjs`,
+`resolve.mjs`, `gitops-rewrite.mjs`. Blueprint: `ARCHITECTURE.md`.
+
+**`<plugin-root>` below is a placeholder, not a literal.** Substitute the absolute path the invoking
+skill states before sending you here. The plugin-root variable those skills use is expanded in
+*skill* content only, so writing it in this file would hand the Workflow an empty string and a path
+like `/engine`; hence the placeholder.
 
 **Agent and skill names carry the `agentic-dr:` prefix.** A plugin's components resolve only by
 their scoped name; the bare name does not resolve, and using it would silently spawn a generic agent
@@ -39,16 +35,8 @@ convention is that the consuming repo holds `agentic-dr/profile/` and `agentic-d
    paths, workspace scheme, exclusions) comes from `profile/`, never from memory.
 4. **Pin the SHA.** Pin `main`'s commit SHA at invocation and build the whole estate from it
    (ARCHITECTURE §4). Record it in `run-report.md`.
-5. **Apply is doubly gated and staged.** Per-tier approval here *and* the `dr` GitHub Environment's
-   required-reviewers server-side.
-
-## Modes
-
-| Invocation | Mode | What runs |
-| ---------- | ---- | --------- |
-| `/agentic-dr:dr-build dry-run` | 1 | Phase 1–3 (generate Terraform + the platform/core GitOps overlay + lint/reconcile/validate); optionally a gated `plan_only=true` drift check. No apply. |
-| `/agentic-dr:dr-build failover` | 2 | Phase 1–6: generate → gated staged plan → gated staged apply → triage → resolve GitOps POST-APPLY sentinels. Triggered by the customer DR process (`profile/process.md`), never on a hunch. |
-| `/agentic-dr:dr-build fix <service>` | 3 | Adaptive remediation of one failing service (region-parity gap / misbehaving managed service). See "Mode 3" below. |
+5. **Apply is doubly gated and staged.** Per-tier approval in `/agentic-dr:failover` *and* the `dr`
+   GitHub Environment's required-reviewers server-side.
 
 ---
 
@@ -58,8 +46,8 @@ Do all of this before spawning anything. It is the cheap abort point.
 
 1. **Pin the SHA.** `git rev-parse main` (or the current `main` tip). Use this commit for every read.
 2. **Advisory lock (§16.11).** Check `<state-dir>/build.lock`. If present, stop and report who
-   holds it. Otherwise write it (engineer, pinned SHA, mode). Remove it when the run hands off to the
-   gated phases or completes. Advisory only — TFC state locks are the real backstop.
+   holds it. Otherwise write it (engineer, pinned SHA, which entrypoint). Remove it when the run hands
+   off to the gated phases or completes. Advisory only — TFC state locks are the real backstop.
 3. **Discover the in-scope roots (§12).** Read `profile/repo-map.md` (source-root locations, DR
    output tree, TFC scheme, tfvars name), `profile/scope-rules.md` (exclusions), and
    `profile/global-services.md` (buckets). Enumerate every root under the source-root locations
@@ -102,27 +90,27 @@ Do all of this before spawning anything. It is the cheap abort point.
 After approval, run the committed Orchestrator. It has no filesystem access of its own — its
 deterministic file work runs via a thin exec agent over the committed scripts (§16.13).
 
-Invoke the **Workflow** tool with `scriptPath: "${CLAUDE_PLUGIN_ROOT}/workflows/dr-build.js"` and:
+Invoke the **Workflow** tool with `scriptPath: "<plugin-root>/workflows/dr-build.js"` and:
 
 ```
 args = {
   sha:        "<pinned SHA>",
   inScope:    [ { component, source_root, target_root, tfc_workspace }, ... ], // from Phase 1
   pipeline:   "<DR pipeline path>",                    // from profile/repo-map.md
-  engine:     "${CLAUDE_PLUGIN_ROOT}/engine",          // REQUIRED — the committed deterministic scripts
+  engine:     "<plugin-root>/engine",                  // REQUIRED — the committed deterministic scripts
   agenticDir: "agentic-dr"                             // where profile/ and state/ live
 }
 ```
 
-`${CLAUDE_PLUGIN_ROOT}` is substituted in this skill's content, so the Workflow receives concrete
-absolute paths. That indirection is the whole reason `engine` is an argument: the scripts ship with
+Both must be the **absolute** plugin path the skill gave you, so the Workflow receives concrete
+paths. That indirection is the whole reason `engine` is an argument: the scripts ship with
 the plugin, the profile and state live in the estate's own repo, and neither may assume the other's
 location.
 
 > The fan-out workflow is auto-exposed as `agentic-dr:dr-build-fanout`. **It is not an entrypoint.**
-> It carries none of the gates — they live here, in the main loop, because a workflow cannot pause
+> It carries none of the gates — they live in the main loop, because a workflow cannot pause
 > for approval. Invoked bare it throws, because `sha`, `inScope` and `engine` only exist once Phase 1
-> has run and been approved. Its name differs from this skill's on purpose: a workflow sharing a
+> has run and been approved. Its name matches no skill directory on purpose: a workflow sharing a
 > skill's name shadows it, and the caller silently gets the dispatch shim instead of these gates.
 
 It fans out one `agentic-dr:dr-component-builder` per in-scope root, invariant-lints + reconciles each
@@ -140,8 +128,8 @@ edited/new Builders re-run) after the owning root is fixed. Then run `terraform 
 
 **Commit the result as a PR** (ARCHITECTURE §16.2): the generated DR roots, the regenerated DR
 pipeline job stanzas, the committed state files (`build-plan.md`, `blackboard.md`,
-`dependency-graph.md`, `run-report.md`, `gitops-report.md`), and — for failover — the regenerated
-GitOps overlay (see GitOps residue below). Git is the audit trail and the Mode-1
+`dependency-graph.md`, `run-report.md`, `gitops-report.md`), and — for a failover — the regenerated
+GitOps overlay (see GitOps residue below). Git is the audit trail and the `/agentic-dr:dry-run`
 drift baseline.
 
 ### GitOps overlay (platform/core) — interactive residue (main loop)
@@ -157,70 +145,10 @@ the residue it can't decide autonomously:
   sources kept as the default) and ask the engineer to confirm or override; apply the answer to the
   overlay file.
 - **POST-APPLY.** A `__DR_POST_APPLY__*` sentinel cannot be resolved until the root that produces its
-  value applies. Leave them for **Phase 6**: once those tiers apply, read each DR value from the
-  producing root's **Terraform output** — `profile/gitops-rules.md` names the output per sentinel
-  slug — replace the sentinels, then commit. Never infer one from the source overlay.
-- **Commit semantics.** For **dry-run**, the overlay + report are the artifact — review the diff
-  (`git diff --no-index <source_dir> <target_dir>`); sentinels remain unresolved, do not deploy. For
-  **failover**, the `target_dir` must be on `main` (the GitOps controller syncs manifests from git),
-  and **every sentinel must be resolved** first.
-- **[SENTINEL GATE — failover commit].** Before committing the overlay for a failover, run
-  `grep -rl '__DR_' <target_dir>` — it **MUST be empty**. A remaining `__DR_POST_APPLY__*` or
-  `__DR_DECIDE__*` token means an unresolved identity, resource id or allowlist, and committing it
-  would sync a manifest that fails to authenticate (or trusts the wrong sources) on the DR cluster.
-  A non-empty result **blocks the commit** until resolved.
-
-For **`/agentic-dr:dr-build dry-run`**, you may stop here, or escalate to a gated drift check: **[GATE]** ask
-before `gh workflow run <DR pipeline> -f plan_only=true ...`, in dependency order, as far as a cold
-region allows (cold plan-only is partial by design, §6.3). No apply, ever, in Mode 1.
-
----
-
-## Phase 4–6 — failover plan / apply / triage (`/agentic-dr:dr-build failover`, gated)
-
-Run in the main loop, tier by tier, in the order from `dependency-graph.md`. The Workflow can't pause
-for approvals — you carry the gates.
-
-- **Phase 4 — Plan (staged).** **[GATE]** ask, then `gh workflow run <DR pipeline> -f plan_only=true
-  -f components_to_deploy="<this tier>"`. Watch with `gh run watch` / `gh run view`. **Human review of
-  each plan is the real semantic gate** — the lint is only a tripwire (§10/§11). A green plan that
-  wires the wrong region/subnet is a *failure*.
-- **Phase 5 — Triage.** On any plan/apply failure, spawn a **`agentic-dr:dr-plan-validator`** (read-only) with the
-  failing component + the `gh run` id. Route its verdict:
-  - `route_to: builder` (`name-mismatch`, `module-input-mismatch`, `config-error`) → re-invoke the
-    Workflow for that one root (resumable), re-plan.
-  - `route_to: orchestrator` (`missing-upstream`) → fix apply order, not code; re-plan the tier.
-  - `route_to: human` / `escalate_to_mode3: true` (`quota`, `prereq`, `region-capability`) → surface to
-    the engineer; a region-parity / "won't come up" failure goes to **Mode 3** (`/agentic-dr:dr-build fix`).
-- **Phase 6 — Apply (staged, failover only).** **[GATE per tier]** Only after explicit approval, flip
-  `plan_only=false` for that tier (the `dr` Environment's required-reviewers gate it again
-  server-side). Tier order: hub/firewall → DNS → network-dependent workloads → the rest. After each
-  apply, capture post-apply residue (firewall IP, hub IPs) back into `blackboard.md` and advance.
-  Once the tiers that produce them are applied, resolve the GitOps `__DR_POST_APPLY__*` sentinels
-  from those roots' Terraform outputs (`profile/gitops-rules.md` names the output per slug) into the
-  `target_dir`, then **clear the SENTINEL GATE** (`grep -rl '__DR_' <target_dir>` must be empty —
-  covers the DECIDE values too) and commit, so the DR GitOps controller syncs a complete overlay.
-
-Resumability: if a session dies mid-apply, recovery does not depend on it — the committed state files
-+ TFC state let any engineer resume the tiered apply (§8, §16.3).
-
----
-
-## Mode 3 — adaptive remediation (`/agentic-dr:dr-build fix <service>`)
-
-Not regeneration — problem-solving against **one** failing service (a region-parity gap or a
-misbehaving managed service). Spawn the **`agentic-dr:dr-dynamic-remediator`** agent with the failure + the
-affected DR root. It diagnoses, then proposes only **invariant-safe** alternatives:
-
-> **Hard invariants it may never propose violating** (ARCHITECTURE §3): no public exposure of an
-> internal service, no egress bypass of the controlled path, no weakening of network isolation /
-> encryption-at-rest / TLS, and DR-estate-only. If the only working option breaks one, it **stops and
-> escalates to a human** instead of presenting it.
-
-**[APPROVAL GATE]** the engineer picks an option → implement it as a surgical change to the affected
-DR root (or record a manual step) → re-plan/apply through the Mode-2 gates. An approved + applied fix
-**auto-drafts a PR** to `profile/region-gaps.md` (rationale + revisit trigger), never into
-the mechanical `transform-rules.md` (§16.10). Human-reviewed, never auto-merged.
+  value applies. For `/agentic-dr:dry-run` they simply stay unresolved. For `/agentic-dr:failover`
+  they are resolved in **Phase 6**: once those tiers apply, read each DR value from the producing
+  root's **Terraform output** — `profile/gitops-rules.md` names the output per sentinel slug —
+  replace the sentinels, then commit. Never infer one from the source overlay.
 
 ---
 
@@ -229,11 +157,13 @@ the mechanical `transform-rules.md` (§16.10). Human-reviewed, never auto-merged
 - The **pinned SHA** and the **in-scope list** (from `run-report.md`).
 - **Built vs blocked**, and any **open blackboard items** + **cycles** (escalate cycles).
 - The **manual-work checklist** (prerequisites + preflight gotchas) the engineer still owns.
-- For failover: which tiers planned/applied, and any Validator verdicts / Mode-3 escalations.
 - The PR link for the generated roots + state files.
 
-## Not in scope for this skill
+`/agentic-dr:failover` adds to this: which tiers planned/applied, and any Validator verdicts /
+`/agentic-dr:fix` escalations.
+
+## Not in scope for either entrypoint
 
 Cutover (routing live traffic to DR) and failback are **customer-driven routing steps**, never the
-agent fan-out (ARCHITECTURE §1, §17). DR cleanup is a future `/agentic-dr:dr-build cleanup`. Data restore is the
-customer's data plane (§1).
+agent fan-out (ARCHITECTURE §1, §17). DR cleanup is a future `/agentic-dr:cleanup`. Data restore is
+the customer's data plane (§1).

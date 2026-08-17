@@ -285,21 +285,45 @@ if [[ -n "$bare_refs" ]]; then
 else
   ok "every agent is referenced by its scoped ${plugin_name}: name, never bare"
 fi
-# The same trap, one level out: documentation that tells a human to type the bare `/dr-build` is
+# The same trap, one level out: documentation that tells a human to type the bare `/dry-run` is
 # telling them to type something that does not resolve. The agent check above deliberately ignores
 # prose, because prose mentions of an agent are not resolution sites — but an invocation IS the
-# resolution site when the resolver is a person reading the docs. A path (skills/dr-build/) or the
+# resolution site when the resolver is a person reading the docs. A path (skills/dry-run/) or the
 # scoped form are both fine; a slash-prefixed bare name is not.
+# Derived from the skill directories rather than a hardcoded list, so splitting or renaming an
+# entrypoint cannot quietly drop it out of the check.
 # The leading alternation matters: these appear at the start of a line inside fenced code blocks,
 # where a character class with nothing to match sees nothing. A first cut of this check missed
 # exactly that and passed while the docs were wrong.
-bare_skill="$(grep -rnoE "(^|[^a-zA-Z0-9_/:])/dr-build\\b" \
-                ARCHITECTURE.md README.md agents docs skills workflows profile.example 2>/dev/null || true)"
+bare_skill=""
+for d in skills/*/; do
+  [[ -d "$d" ]] || continue
+  sname="$(basename "$d")"
+  bare_skill+="$(grep -rnoE "(^|[^a-zA-Z0-9_/:])/${sname}\\b" \
+                   ARCHITECTURE.md README.md agents docs skills workflows profile.example 2>/dev/null || true)"
+done
 if [[ -n "$bare_skill" ]]; then
-  bad "the skill is invoked by its BARE name in documentation — a reader typing that gets nothing"
+  bad "a skill is invoked by its BARE name in documentation — a reader typing that gets nothing"
   printf '%s\n' "$bare_skill" | head -5 | sed 's/^/      /'
 else
   ok "every documented invocation carries the ${plugin_name}: prefix"
+fi
+
+# Every entrypoint skill must be reachable and must declare the name its directory promises: the
+# loader resolves `/<plugin>:<name>` from the frontmatter, so a directory renamed without its
+# frontmatter yields an invocation that nothing answers, and the docs above would be lying.
+missing_name=""
+for d in skills/*/; do
+  [[ -f "${d}SKILL.md" ]] || { missing_name+="$d has no SKILL.md"$'\n'; continue; }
+  fname="$(grep -m1 -oE '^name: *[A-Za-z0-9_-]+' "${d}SKILL.md" | sed 's/^name: *//')"
+  [[ "$fname" == "$(basename "$d")" ]] || \
+    missing_name+="${d}SKILL.md declares name '$fname', but the directory is '$(basename "$d")'"$'\n'
+done
+if [[ -n "$missing_name" ]]; then
+  bad "a skill's frontmatter name does not match its directory"
+  printf '%s' "$missing_name" | sed 's/^/      /'
+else
+  ok "every skill directory declares a matching frontmatter name"
 fi
 
 # A plugin's workflows are auto-discovered and each is exposed as a dispatch skill under its
@@ -324,6 +348,16 @@ if grep -rq 'CLAUDE_PLUGIN_ROOT' engine/ 2>/dev/null; then
   bad "an engine script uses \${CLAUDE_PLUGIN_ROOT}, which is not substituted outside skill/agent content"
 else
   ok "no engine script relies on \${CLAUDE_PLUGIN_ROOT} substitution"
+fi
+# Same substitution boundary, the other side of it: docs/build-procedure.md is *read* by a skill, not
+# loaded as one, so a ${CLAUDE_PLUGIN_ROOT} written there arrives unexpanded and resolves to nothing —
+# the Workflow would be handed `/engine`. The skills state the absolute path and the doc says
+# <plugin-root>. Nothing errors if this regresses; the fan-out just fails at the first exec agent.
+if grep -rq 'CLAUDE_PLUGIN_ROOT' docs/ 2>/dev/null; then
+  bad "a docs/ file uses \${CLAUDE_PLUGIN_ROOT}, which is only substituted in skill/agent content"
+  grep -rn 'CLAUDE_PLUGIN_ROOT' docs/ | head -3 | sed 's/^/      /'
+else
+  ok "no docs/ file relies on \${CLAUDE_PLUGIN_ROOT} substitution"
 fi
 
 echo "== consuming-repo integration =="

@@ -6,7 +6,8 @@ on demand from current `main`, instead of maintaining a parallel DR pipeline tha
 
 - **What it is / why** → `ARCHITECTURE.md` (the design blueprint, customer-agnostic).
 - **What it runs against** → `profile/` (the only per-customer part; contract in `docs/profile-contract.md`).
-- **How the agent behaves** → `skills/dr-build/SKILL.md` (mode routing + approval gates).
+- **How the agent behaves** → `skills/*/SKILL.md` (one per mode) and `docs/build-procedure.md`
+  (the generation phases they share, plus the approval gates).
 - **This file** → the operator's quickstart.
 
 ## How it runs
@@ -16,21 +17,21 @@ token. You open the tool and invoke one skill; it pins the current `main` SHA an
 estate from that commit.
 
 ```
-/agentic-dr:dr-build dry-run        # Mode 1 — generate + lint/validate (+ optional gated plan-only). No apply.
-/agentic-dr:dr-build failover       # Mode 2 — generate → gated staged plan → gated staged apply → triage.
-/agentic-dr:dr-build fix <service>  # Mode 3 — adaptively remediate ONE failing service (region-parity gap).
+/agentic-dr:dry-run        # Mode 1 — generate + lint/validate (+ optional gated plan-only). No apply.
+/agentic-dr:failover       # Mode 2 — generate → gated staged plan → gated staged apply → triage.
+/agentic-dr:fix <service>  # Mode 3 — adaptively remediate ONE failing service (region-parity gap).
 ```
 
 The `agentic-dr:` prefix is the plugin namespace. It applies to the agents too, and it is not
 optional: a bare name does not resolve, so it would spawn an agent with no persona.
 
-**Start with `dry-run`.** Mode 2 is only ever reached after Mode 1 is trusted, and is triggered by the
+**Start with `/agentic-dr:dry-run`.** Mode 2 is only ever reached after Mode 1 is trusted, and is triggered by the
 customer DR process (`profile/process.md`), never on a hunch.
 
 ## The one rule
 
-**No pipeline ever runs without your explicit approval — including `plan_only`.** The skill stops and
-asks before any `gh workflow run`. Apply is doubly gated (you approve per tier, *and* the `dr` GitHub
+**No pipeline ever runs without your explicit approval — including `plan_only`.** Every skill stops
+and asks before any `gh workflow run`. Apply is doubly gated (you approve per tier, *and* the `dr` GitHub
 Environment's required-reviewers approve server-side).
 
 ## What happens in a run
@@ -94,11 +95,20 @@ The Orchestrator coordinates agents but is itself code, not an agent.
 | `dr-plan-validator.md` | Read-only triage of one `plan`/`apply` failure → a structured verdict the Orchestrator routes (to a Builder, to apply-order, or to a human / Mode 3). |
 | `dr-dynamic-remediator.md` | Mode 3: diagnoses one failing service and proposes **invariant-safe** alternatives; on approval, implements a surgical fix. Escalates rather than violate a hard invariant. |
 
-### Skill — the entrypoint (`skills/dr-build/`)
+### Skills — the entrypoints (`skills/`)
 
-| File | Role |
+One per intent, so the invocation says what you want rather than naming a mode.
+
+| Skill | Role |
 | ---- | ---- |
-| `SKILL.md` | The `/agentic-dr:dr-build` entrypoint. Runs Phase-1 discovery + the build-plan gate in the main loop, pins the SHA, invokes `workflows/dr-build.js`, and carries the gated plan/apply/triage flow. Holds the approval discipline. |
+| `dry-run/` | `/agentic-dr:dry-run` — Phases 1–3 then stop, or a gated plan-only drift check. Never applies. |
+| `failover/` | `/agentic-dr:failover` — Phases 1–3, then the gated staged plan, gated staged apply, triage, and the sentinel gate on the GitOps overlay. |
+| `fix/` | `/agentic-dr:fix <service>` — spawns the Dynamic Remediator against one failing service and gates the chosen fix. |
+| `update-profile/` | `/agentic-dr:update-profile` — audits and updates `profile/` after the source estate changes. |
+
+`dry-run` and `failover` both run Phases 1–3 from **`docs/build-procedure.md`**, which holds the
+golden rules, Phase-1 discovery, the build-plan gate, the Workflow fan-out and the GitOps residue —
+one copy, so the shared half cannot drift between them.
 
 ### Profile — the per-customer bindings (`profile/`)
 
@@ -117,7 +127,7 @@ Written during a run; schemas documented in **`docs/state-files.md`**. Committed
 
 The build's job ends at **"infrastructure up and running."** Data restore is the customer's data plane;
 **traffic cutover and failback are customer-led routing steps**, never the agent fan-out (ARCHITECTURE
-§1, §17). DR cleanup is a future `/agentic-dr:dr-build cleanup`.
+§1, §17). DR cleanup is a future `/agentic-dr:cleanup`.
 
 ## Running it for another customer
 
