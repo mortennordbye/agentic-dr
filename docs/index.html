@@ -1,0 +1,34 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Agentic DR — build walkthrough</title>
+<!--
+  Pages entry point. This directory is published as-is, so the root URL needs somewhere to land:
+  the interactive walkthrough is the only page here meant to be read in a browser. Everything else
+  in docs/ is markdown, better read in the repository.
+
+  The redirect is a plain meta refresh with a visible link behind it, so it still works with
+  scripting disabled. The href stays relative — an absolute one would hardcode the Pages host into
+  a repository whose own release gate rejects hostnames.
+-->
+<meta http-equiv="refresh" content="0; url=agentic-dr-build-diagram.html">
+<link rel="canonical" href="agentic-dr-build-diagram.html">
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background: #f5f1ec; color: #2b2724;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: #1c1a18; color: #e8e3dd; }
+  }
+  main { text-align: center; padding: 2rem; }
+  h1 { font-size: 1.25rem; font-weight: 600; margin: 0 0 .5rem; }
+  p { margin: 0; opacity: .75; }
+  a { color: inherit; }
+</style>
+<main>
+  <h1>Agentic DR</h1>
+  <p>Opening the <a href="agentic-dr-build-diagram.html">build walkthrough</a>&hellip;</p>
+</main>
