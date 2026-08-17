@@ -6,3 +6,10 @@
 # A private supplementary scrub list must never be committed — that is the entire point of keeping
 # it outside the repo. See docs/scrub-gate.md.
 private-*patterns*.txt
+
+# Editor and OS noise.
+.idea/
+.vscode/
+*.swp
+*~
+Thumbs.db
