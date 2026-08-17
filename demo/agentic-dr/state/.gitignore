@@ -1,0 +1,8 @@
+# Durable run artifacts are committed; transients are not (ARCHITECTURE §16.3).
+*
+!.gitignore
+!build-plan.md
+!blackboard.md
+!dependency-graph.md
+!run-report.md
+!gitops-report.md

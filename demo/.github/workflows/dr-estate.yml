@@ -1,0 +1,22 @@
+# The DR pipeline. Agents trigger this one and only this one; resolve.mjs regenerates the job
+# stanzas between the two sentinels from the computed apply order, leaving anything outside intact.
+name: DR estate
+
+on:
+  workflow_dispatch:
+    inputs:
+      plan_only:
+        type: boolean
+        default: true
+      components_to_deploy:
+        default: all
+      ignore_needs:
+        default: 'false'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  # >>> BEGIN generated DR jobs (managed by agentic-dr resolve.mjs — do not edit by hand) <<<
+  # >>> END generated DR jobs <<<

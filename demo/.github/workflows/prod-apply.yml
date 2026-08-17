@@ -1,0 +1,9 @@
+# A SOURCE pipeline. The agents must never trigger this one.
+name: prod-apply
+on:
+  workflow_dispatch:
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "source estate pipeline"

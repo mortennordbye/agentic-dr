@@ -1,0 +1,71 @@
+# profile/lint-patterns.txt — the machine-readable token set engine/lint.sh greps for.
+#
+# THIS IS AN EXAMPLE PROFILE. Every value below belongs to a fictional estate (Contoso, West Europe
+# to North Europe). Replace them with your own before running against a real repo.
+#
+# Format:  <KIND><TAB><pattern-or-rulekey><TAB><arg-or-reason>
+#   FORBIDDEN    <ERE>            <reason>   any hit fails the root
+#   REQUIRED     <ERE>            <reason>   absence fails the root
+#   CONDITIONAL  <rulekey>        <arg>      one of the four rules implemented in lint.sh
+#
+# CONDITIONAL rulekeys (see docs/lint-patterns-format.md):
+#   cidr-if-network      arg = the DR CIDR ERE required when the root declares address space
+#   env-tag-dr           arg = the value every Environment tag must carry
+#   vnet-netcontrib      arg = the DR identity id that any vnet-module caller must set explicitly
+#   marker-if-regional   arg = the DR marker ERE required on any root referencing azurerm
+#
+# Patterns are POSIX ERE and must work with both BSD and GNU grep, so no \d, \w+ lookarounds, or
+# non-greedy quantifiers. lint.sh strips HCL comments before matching, so a provenance comment that
+# names the source estate does not trip the lint.
+#
+# Each pattern carries its own reason. That column is the whole point: a bare regex tells the next
+# engineer nothing about why a token is forbidden, and this file is the ONLY place the set is
+# written down (transform-rules.md describes the shape, never the list).
+
+# --- Source region tokens --------------------------------------------------------------------------
+FORBIDDEN	westeurope	source region token; every DR resource belongs in the DR region
+FORBIDDEN	West Europe	source region display name
+FORBIDDEN	[^a-z]weu[^a-z]	source region short token used in resource names
+
+# --- Source CIDR blocks ----------------------------------------------------------------------------
+# A DR root carrying a source CIDR would build the DR network on top of the source IP plan.
+FORBIDDEN	10\.100\.	source production CIDR (/16)
+FORBIDDEN	10\.101\.	source connectivity CIDR (/16)
+FORBIDDEN	10\.102\.	source hub CIDR (/16)
+
+# --- Source DNS / firewall values -------------------------------------------------------------------
+FORBIDDEN	10\.101\.1\.4	source-region DNS resolver; DR uses default DNS until its own resolver exists
+FORBIDDEN	10\.102\.0\.132	source-region firewall private IP
+
+# --- Source subscription GUIDs -----------------------------------------------------------------------
+# The form a copied ARM id leaks in. Both halves of a /subscriptions/<guid>/resourceGroups/<rg>/...
+# string must be rewritten (transform rule 13), and this catches the half a name grep cannot see.
+FORBIDDEN	00000000-0000-0000-0000-000000000001	source production subscription id
+FORBIDDEN	00000000-0000-0000-0000-000000000002	source connectivity subscription id
+
+# --- Source identity ----------------------------------------------------------------------------------
+FORBIDDEN	00000000-0000-0000-0000-0000000000a1	source pipeline identity; DR must use its own
+
+# --- Source resource-name prefixes ----------------------------------------------------------------------
+FORBIDDEN	ctso-prod-	source production name prefix
+FORBIDDEN	ctso-conn-	source connectivity name prefix
+
+# --- Source state and module paths -------------------------------------------------------------------
+FORBIDDEN	tfc-prod-	source Terraform Cloud workspace prefix
+FORBIDDEN	tfc-conn-	source Terraform Cloud workspace prefix
+FORBIDDEN	\.\./\.\./modules/	source-depth module path; DR roots sit one level deeper
+
+# --- Required DR markers --------------------------------------------------------------------------------
+REQUIRED	northeurope	the DR region must appear somewhere in the root
+
+# --- Conditional checks -----------------------------------------------------------------------------------
+# Markers only where they apply: a root driving no azurerm resources legitimately carries neither the
+# DR name prefix nor the DR region token. This is a property of the root, re-evaluated every build,
+# not a standing exemption for a named root.
+CONDITIONAL	marker-if-regional	ctso-dr-
+CONDITIONAL	cidr-if-network	10\.200\.
+CONDITIONAL	env-tag-dr	DR
+# A PRESENCE check, not an absence check: omitting this var silently inherits the source identity
+# baked into the shared vnet module's default, which a token grep cannot see because the value lives
+# in the module rather than in the root.
+CONDITIONAL	vnet-netcontrib	00000000-0000-0000-0000-0000000000b1

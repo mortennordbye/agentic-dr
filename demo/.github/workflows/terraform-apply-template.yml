@@ -1,0 +1,18 @@
+# Reusable job the generated stanzas call. Stubbed for the demo: it never touches a cloud.
+name: terraform apply (template)
+
+on:
+  workflow_call:
+    inputs:
+      terraform_directory: { type: string, required: true }
+      environment: { type: string, required: true }
+      runner: { type: string, default: ubuntu-latest }
+      plan_only: { type: boolean, default: true }
+      terraform_version: { type: string, default: latest }
+
+jobs:
+  terraform:
+    runs-on: ${{ inputs.runner }}
+    environment: ${{ inputs.environment }}
+    steps:
+      - run: echo "demo estate — no cloud is reached from here"

@@ -148,6 +148,11 @@ bash tools/test.sh
 
 To try it without installing, clone the repo and run `claude --plugin-dir /path/to/agentic-dr`.
 
+**No estate to point it at?** `demo/` is a fictional one, small enough to read in a sitting and
+shaped to exercise a whole run: five roots, three of them in scope, a real cross-root dependency,
+and a value the generator must defer rather than invent. Copy it somewhere scratch first —
+`demo/README.md` explains why running a build in place is a bad idea.
+
 Start with `dry-run`, and run it often. Mode 2 should never be a cold first run during an incident —
 **test the machinery constantly so it works on DR day.**
 

@@ -1,0 +1,9 @@
+# Workload identity binding. The client id only exists once the DR identity root applies,
+# so the rewriter leaves a sentinel rather than guessing.
+azureIdentity:
+  client-id: 00000000-0000-0000-0000-0000000000d4
+  tenant-id: 00000000-0000-0000-0000-00000000000f
+cluster:
+  name: ctso-prod-weu-aks
+  region: westeurope
+  resource-group: ctso-prod-weu-aks-rg
