@@ -3,21 +3,28 @@
   <!--
     The mark is the thesis, not decoration.
 
-    A recovery ring, because the claim this project makes is that a DR estate is regenerated rather
-    than maintained. It is broken into three segments and closed by an arrowhead: the estate comes
-    back in tiers, in apply order, not all at once — and the gaps are where a human gate sits.
+    Left, one solid block: production, read as truth and never written to. The arc is the failover,
+    and it only ever runs one way. Right, the DR region — deliberately not a mirrored block, because
+    the claim this project makes is that DR is regenerated rather than maintained. It is drawn as
+    three tiers that materialise in apply order, which is exactly what the resolver computes.
 
-    Colours are nordbye.it's own accents (#378144 / #51a45e / #8ec798). Each tint is opaque rather
-    than an alpha ramp, so the mark holds on a light and a dark page from one asset: transparency
-    over #0d1117 turns to mud. Deepest green leads, palest trails, so the ring reads as filling.
+    Colours are nordbye.it's own greens (#378144 / #51a45e / #6bb679 / #8ec798), so the project and
+    the site read as one thing. Every tint is opaque rather than an alpha ramp, so a single asset
+    holds on a light and a dark page alike: transparency over #0d1117 turns to mud.
 
-    Geometry is generated, not hand-nudged — 104° segments on a 44px radius with 16° gaps, the
-    arrowhead flush to the last segment's tangent. Re-derive it rather than tweaking coordinates.
+    Tier gaps are 5px at a 128px viewBox — wide enough to survive being scaled to a 16px favicon,
+    where a 3px gap closes up and the three tiers read as one block.
   -->
-  <g fill="none" stroke-width="15">
-    <path d="M70.1 20.4 A 44 44 0 0 1 104.8 80.5" stroke="#8ec798"/>
-    <path d="M98.7 91.1 A 44 44 0 0 1 29.3 91.1" stroke="#51a45e"/>
-    <path d="M23.2 80.5 A 44 44 0 0 1 47.5 23.2" stroke="#378144"/>
-  </g>
-  <path d="M67.0 15.3 L43.2 12.5 L51.8 33.9 Z" fill="#378144"/>
+
+  <!-- failover: one direction only -->
+  <path d="M30 70 C30 22 98 22 98 62" fill="none" stroke="#51a45e" stroke-width="14"/>
+  <path d="M98 78 L84 50 L112 50 Z" fill="#51a45e"/>
+
+  <!-- production -->
+  <rect x="7" y="78" width="46" height="44" rx="10" fill="#378144"/>
+
+  <!-- DR, regenerated in tiers -->
+  <rect x="75" y="78"    width="46" height="11.5" rx="5" fill="#8ec798"/>
+  <rect x="75" y="94.5"  width="46" height="11.5" rx="5" fill="#6bb679"/>
+  <rect x="75" y="111"   width="46" height="11"   rx="5" fill="#51a45e"/>
 </svg>
