@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Agentic DR Build · Process</title>
+<link rel="icon" type="image/png" href="favicon.png">
 <style>
   :root{
     /* Warm paper, ink, and two muted earth accents. Reads as a printed technical document rather
@@ -157,7 +158,7 @@
 
 <div id="bar">
   <h1>Agentic DR Build</h1>
-  <span class="tag">How the agent fleet regenerates the Phase-2 disaster-recovery estate on demand, read left to right.</span>
+  <span class="tag">How the agent fleet regenerates the disaster-recovery estate on demand, read left to right.</span>
   <span class="spacer"></span>
   <button class="btn" id="play">▶ Play</button>
   <label class="spd" for="speed">Speed
@@ -255,33 +256,33 @@ function chipSvg(name,c){return `<svg viewBox="0 0 30 30" width="28" height="28"
 // ---- surface bands ----
 // vertical columns - the flow runs left → right
 const BANDS=[
-  {x:30,  y:20,w:705, h:940,c:C.accent, t:'Main loop · Phase 1 · think-before-coding'},
-  {x:755, y:20,w:1395,h:940,c:C.accent3,t:'Workflow (workflows/dr-build.js) · Phases 2–3 + GitOps · autonomous'},
+  {x:30,  y:20,w:762, h:940,c:C.accent, t:'Main loop · Phase 1 · think-before-coding'},
+  {x:812, y:20,w:1338,h:940,c:C.accent3,t:'Workflow (workflows/dr-build.js) · Phases 2–3 + GitOps · autonomous'},
   {x:2170,y:20,w:1360,h:940,c:C.accent, t:'Main loop · Phases 4–6 · interactive · gated'},
 ];
 
 // ---- nodes ----  tier: pri|sys|ext · icon or step
 const NODES=[
   // spine - the process, left → right (row cy 438)
-  {id:'start', x:60,  y:400,w:180,h:76,tier:'pri', icon:'terminal', t:'Invoke a skill', sub:'dry-run · failover · fix · pins the main SHA', pill:'entry'},
-  {id:'p1',    x:305, y:400,w:210,h:76,tier:'pri', step:1, icon:'search', t:'Discover & plan', sub:'scan source roots → in-scope list → build plan'},
-  {id:'gate1', x:560, y:400,w:220,h:76,tier:'pri', gate:true, icon:'shield', t:'Build-plan approval', sub:'approve · amend scope · abort', pill:'gate'},
-  {id:'p2',    x:900, y:400,w:210,h:76,tier:'pri', step:2, icon:'spark', t:'Build (fan-out)', sub:'one Builder per component → DR root + manifest'},
-  {id:'p3',    x:1530,y:400,w:210,h:76,tier:'pri', step:3, icon:'hub', t:'Graph & resolve', sub:'DAG · cycles · blackboard · apply order'},
-  {id:'pg',    x:1770,y:400,w:210,h:76,tier:'pri', icon:'data', t:'GitOps overlay', sub:'regenerate DR overlay · substitute · guard', pill:'§16.15'},
-  {id:'handoff',x:2150,y:406,w:180,h:64,tier:'pri', icon:'swap', t:'Hand-off', sub:'roots + manifests + apply order + overlay → main loop'},
-  {id:'p4',    x:2400,y:400,w:210,h:76,tier:'pri', step:4, icon:'clipboard', t:'Plan (staged)', sub:'plan_only=true in dependency order · human review'},
-  {id:'p5',    x:2690,y:400,w:210,h:76,tier:'pri', step:5, icon:'wrench', t:'Triage & fix', sub:'on failure → validator → route the verdict'},
-  {id:'p6',    x:2980,y:400,w:210,h:76,tier:'pri', step:6, icon:'shield', t:'Apply (staged)', sub:'tier by tier · gated · capture residue', pill:'mode 2'},
-  {id:'end',   x:3270,y:400,w:210,h:76,tier:'pri', icon:'flag', t:'Infra up & running', sub:'customer owns the data plane →', pill:'boundary'},
+  {id:'start', x:48,  y:395,w:230,h:86,tier:'pri', icon:'terminal', t:'Invoke a skill', sub:'dry-run · failover · fix · pins the main SHA', pill:'entry'},
+  {id:'p1',    x:305, y:395,w:210,h:86,tier:'pri', step:1, icon:'search', t:'Discover & plan', sub:'scan source roots → in-scope list → build plan'},
+  {id:'gate1', x:560, y:395,w:220,h:86,tier:'pri', gate:true, icon:'shield', t:'Build-plan approval', sub:'approve · amend scope · abort', pill:'gate'},
+  {id:'p2',    x:900, y:395,w:210,h:86,tier:'pri', step:2, icon:'spark', t:'Build (fan-out)', sub:'one Builder per component → DR root + manifest'},
+  {id:'p3',    x:1530,y:395,w:210,h:86,tier:'pri', step:3, icon:'hub', t:'Graph & resolve', sub:'DAG · cycles · blackboard · apply order'},
+  {id:'pg',    x:1770,y:395,w:210,h:86,tier:'pri', icon:'data', t:'GitOps overlay', sub:'regenerate DR overlay · substitute · guard', pill:'§16.15'},
+  {id:'handoff',x:2150,y:400,w:215,h:76,tier:'pri', icon:'swap', t:'Hand-off', sub:'roots + manifests + apply order + overlay → main loop'},
+  {id:'p4',    x:2400,y:395,w:230,h:86,tier:'pri', step:4, icon:'clipboard', t:'Plan (staged)', sub:'plan_only=true in dependency order · human review'},
+  {id:'p5',    x:2690,y:395,w:210,h:86,tier:'pri', step:5, icon:'wrench', t:'Triage & fix', sub:'on failure → validator → route the verdict'},
+  {id:'p6',    x:2980,y:395,w:210,h:86,tier:'pri', step:6, icon:'shield', t:'Apply (staged)', sub:'tier by tier · gated · capture residue', pill:'mode 2'},
+  {id:'end',   x:3270,y:395,w:230,h:86,tier:'pri', icon:'flag', t:'Infra up & running', sub:'customer owns the data plane →', pill:'boundary'},
 
   // above the spine - inputs / truth in (row cy 222)
   {id:'profile',x:295,y:185,w:230,h:74,tier:'sys', icon:'doc', t:'profile/', sub:'per-customer facts & guardrails'},
-  {id:'prod',        x:880,y:150,w:235,h:66,tier:'ext', icon:'terraform', t:'source roots', sub:'the locations repo-map.md names · read as truth'},
-  {id:'connectivity',x:880,y:252,w:235,h:66,tier:'ext', icon:'terraform', t:'network roots', sub:'hub / firewall / DNS tier · read as truth'},
+  {id:'prod',        x:880,y:148,w:235,h:70,tier:'ext', icon:'terraform', t:'source roots', sub:'the locations repo-map.md names · read as truth'},
+  {id:'connectivity',x:880,y:250,w:235,h:70,tier:'ext', icon:'terraform', t:'network roots', sub:'hub / firewall / DNS tier · read as truth'},
 
   // the orchestrator - thin control plane (cy 545)
-  {id:'orchestrator',x:855,y:513,w:300,h:64,tier:'sys', icon:'gear', t:'dr-build.js · Orchestrator', sub:'fans out Builders · owns DAG · blackboard · apply order'},
+  {id:'orchestrator',x:855,y:511,w:300,h:70,tier:'sys', icon:'gear', t:'dr-build.js · Orchestrator', sub:'fans out Builders · owns DAG · blackboard · apply order'},
 
   // the isolation guarantee - not a step, a property of the environment every cloud step runs in
   {id:'isolation',x:2395,y:158,w:300,h:82,tier:'ext', icon:'shield', t:'DR-only identity', sub:'no role on the source subscriptions · a wrong apply is denied by the cloud', pill:'§1'},
@@ -291,25 +292,25 @@ const NODES=[
   {id:'applygate',x:3005,y:518,w:165,h:72,tier:'pri', gate:true, icon:'shield', t:'Apply gate', sub:'per-tier approval'},
 
   // below the spine - row A: workers & checks (cy 660)
-  {id:'buildplan',x:285,y:628,w:250,h:64,tier:'sys', icon:'clipboard', t:'build-plan.md', sub:'the prediction (will / won’t / manual)'},
-  {id:'builder',  x:870,y:628,w:200,h:64,tier:'sys', icon:'spark', t:'component-builder', sub:'writes 1 DR root + its manifest'},
-  {id:'lint',     x:1110,y:628,w:150,h:64,tier:'sys', icon:'gear', t:'lint.sh', sub:'invariant lint · leakage'},
-  {id:'reconcile',x:1310,y:628,w:180,h:64,tier:'sys', icon:'gear', t:'reconcile.mjs', sub:'manifest ↔ HCL'},
-  {id:'resolve',  x:1540,y:628,w:190,h:64,tier:'sys', icon:'graph', t:'resolve.mjs', sub:'graph · order · stanzas'},
-  {id:'gitops',   x:1775,y:628,w:205,h:64,tier:'sys', icon:'gear', t:'gitops-rewrite.mjs', sub:'copy + substitute · overlay guard'},
-  {id:'pipeline', x:2400,y:628,w:210,h:64,tier:'ext', icon:'githubactions', t:'DR pipeline', sub:'the real plan/apply'},
-  {id:'validator',x:2690,y:628,w:210,h:64,tier:'sys', icon:'search', t:'plan-validator', sub:'triage failure · verdict'},
-  {id:'remediator',x:2980,y:628,w:210,h:64,tier:'sys', icon:'wrench', t:'remediator', sub:'Mode 3 adaptive fix'},
+  {id:'buildplan',x:285,y:626,w:250,h:70,tier:'sys', icon:'clipboard', t:'build-plan.md', sub:'the prediction (will / won’t / manual)'},
+  {id:'builder',  x:870,y:626,w:200,h:70,tier:'sys', icon:'spark', t:'component-builder', sub:'writes 1 DR root + its manifest'},
+  {id:'lint',     x:1110,y:626,w:160,h:70,tier:'sys', icon:'gear', t:'lint.sh', sub:'invariant lint · leakage'},
+  {id:'reconcile',x:1310,y:626,w:180,h:70,tier:'sys', icon:'gear', t:'reconcile.mjs', sub:'manifest ↔ HCL'},
+  {id:'resolve',  x:1540,y:626,w:190,h:70,tier:'sys', icon:'graph', t:'resolve.mjs', sub:'graph · order · stanzas'},
+  {id:'gitops',   x:1775,y:626,w:205,h:70,tier:'sys', icon:'gear', t:'gitops-rewrite.mjs', sub:'copy + substitute · overlay guard'},
+  {id:'pipeline', x:2400,y:626,w:210,h:70,tier:'ext', icon:'githubactions', t:'DR pipeline', sub:'the real plan/apply'},
+  {id:'validator',x:2690,y:626,w:210,h:70,tier:'sys', icon:'search', t:'plan-validator', sub:'triage failure · verdict'},
+  {id:'remediator',x:2980,y:626,w:210,h:70,tier:'sys', icon:'wrench', t:'remediator', sub:'Mode 3 adaptive fix'},
 
   // below the spine - row B: artifacts & committed state (cy 775)
-  {id:'drroot',   x:780,y:744,w:160,h:62,tier:'ext', icon:'terraform', t:'DR root *.tf', sub:'generated estate'},
-  {id:'manifests',x:965,y:740,w:180,h:70,tier:'sys', icon:'data', t:'manifests/*.json', sub:'each Builder’s self-report'},
-  {id:'blackboard',x:1180,y:744,w:185,h:62,tier:'sys', icon:'data', t:'blackboard.md', sub:'unresolved cross-component refs'},
-  {id:'depgraph', x:1390,y:744,w:200,h:62,tier:'sys', icon:'graph', t:'dependency-graph.md', sub:'DAG + apply order + cycles'},
-  {id:'runreport',x:1615,y:744,w:185,h:62,tier:'sys', icon:'doc', t:'run-report.md', sub:'pinned SHA · built / blocked · residue'},
-  {id:'gitopsdr', x:1815,y:744,w:200,h:62,tier:'ext', icon:'data', t:'GitOps target_dir', sub:'generated platform overlay'},
-  {id:'ghlogs',   x:2400,y:744,w:210,h:62,tier:'ext', icon:'github', t:'gh run logs', sub:'plan / apply output'},
-  {id:'regiongaps',x:2690,y:744,w:210,h:62,tier:'sys', icon:'doc', t:'region-gaps.md', sub:'Mode 3 write-back (PR)'},
+  {id:'drroot',   x:818,y:742,w:152,h:70,tier:'ext', icon:'terraform', t:'DR root *.tf', sub:'generated estate'},
+  {id:'manifests',x:988,y:742,w:180,h:70,tier:'sys', icon:'data', t:'manifests/*.json', sub:'each Builder’s self-report'},
+  {id:'blackboard',x:1180,y:742,w:185,h:70,tier:'sys', icon:'data', t:'blackboard.md', sub:'unresolved cross-component refs'},
+  {id:'depgraph', x:1390,y:742,w:222,h:70,tier:'sys', icon:'graph', t:'dependency-graph.md', sub:'DAG + apply order + cycles'},
+  {id:'runreport',x:1637,y:742,w:185,h:70,tier:'sys', icon:'doc', t:'run-report.md', sub:'pinned SHA · built / blocked · residue'},
+  {id:'gitopsdr', x:1847,y:742,w:200,h:70,tier:'ext', icon:'data', t:'GitOps target_dir', sub:'generated platform overlay'},
+  {id:'ghlogs',   x:2400,y:742,w:210,h:70,tier:'ext', icon:'github', t:'gh run logs', sub:'plan / apply output'},
+  {id:'regiongaps',x:2690,y:742,w:210,h:70,tier:'sys', icon:'doc', t:'region-gaps.md', sub:'Mode 3 write-back (PR)'},
 ];
 const N={}; NODES.forEach(n=>N[n.id]=n);
 
@@ -400,7 +401,7 @@ const D={
 
   gitops:{k:'Script · §8 Phase G, §16.15',i:'gear',io:['deterministic','committed','no LLM'],h:`
     <p><strong>In one line:</strong> Terraform builds the infrastructure; this script makes the DR copy of the files that tell the Kubernetes cluster what to run on it.</p>
-    <p><strong>gitops-rewrite.mjs</strong> is the GitOps analogue of lint.sh: a committed, deterministic engine driven by <code>profile/gitops-substitutions.json</code> (the run-time rule source). It copies the in-scope components, applies the prod→DR substitutions, stamps the POST-APPLY / DECIDE sentinels, runs the completeness guard, and writes <code>state/gitops-report.md</code>.</p>
+    <p><strong>gitops-rewrite.mjs</strong> is the GitOps analogue of lint.sh: a committed, deterministic engine driven by <code>profile/gitops-substitutions.json</code> (the run-time rule source). It copies the in-scope components, applies the prod→DR substitutions, stamps the POST-APPLY / DECIDE sentinels, runs the completeness guard, and writes <code>&lt;state-dir&gt;/gitops-report.md</code>.</p>
     <p>The guard lives here rather than in <code>lint.sh</code> because that linter checks only Terraform roots (<code>*.tf</code>/<code>*.tfvars</code>); the overlay is YAML.</p>`},
 
   gitopsdr:{k:'Output · §16.15',i:'data',io:['generated','committed for failover'],h:`
@@ -410,7 +411,7 @@ const D={
     <p>The Phase-1 prediction of exactly what the run intends to do, in three sections:</p>
     <ul>
       <li><strong>Will be created</strong>: each in-scope root mapped to its DR root (name, region, CIDR, workspace), grouped by apply tier.</li>
-      <li><strong>Will not be created, and why</strong>: scope exclusions, the pre-staged Phase-1 roots, global singletons, and services already replicated to the DR region.</li>
+      <li><strong>Will not be created, and why</strong>: scope exclusions, the roots DR pre-stages ahead of a failover (the customer’s DR phase 1, not this run’s), global singletons, and services already replicated to the DR region.</li>
       <li><strong>Will need manual work</strong>: out-of-band prerequisites, bootstrap secrets and Key Vault, predicted blackboard residue, known region-parity gaps, and the customer-owned data restore and traffic cutover.</li>
     </ul>
     <p>It is a prediction, not the authoritative graph. The DAG and reconciled blackboard come later from the manifests, and run-report.md confirms or corrects it. Empty data-bearing roots appear under "will be created"; their data does not, because that is manual work.</p>`},
@@ -447,7 +448,7 @@ const D={
 
   lint:{k:'Oracle 1 · invariant lint · §11',i:'gear',io:['grep, not LLM','tripwire'],h:`
     <p><strong>In one line:</strong> it asks whether anything in the generated files still points at the live production estate, and fails the component if so.</p>
-    <p><strong>lint.sh</strong> is the invariant lint: a mechanical grep, not a model. It runs on every DR root and fails the component on any sign of source-estate leakage, including source-region tokens, source CIDRs, source resolver or firewall IPs, the source pipeline identity, source workspaces, a non-DR Environment tag, and source-depth module paths. It also checks that the expected DR markers are present. The pattern set lives in the committed <code>lint-patterns.txt</code>.</p>
+    <p><strong>lint.sh</strong> is the invariant lint: a mechanical grep, not a model. It runs on every DR root and fails the component on any sign of source-estate leakage, including source-region tokens, source CIDRs, source resolver or firewall IPs, the source pipeline identity, source workspaces, a non-DR Environment tag, and source-depth module paths. It also checks that the expected DR markers are present. The mechanism is committed here; the tokens it greps for are profile data (<code>profile/lint-patterns.txt</code>), so a new customer edits the patterns file, never the script.</p>
     <div class="ref">Necessary but not sufficient. The real semantic check is a human reading the plan (§10).</div>`},
 
   reconcile:{k:'Oracle 2 · flag-don’t-guess · §11',i:'gear',io:['manifest vs HCL','deterministic','no LLM'],h:`
@@ -475,7 +476,7 @@ const D={
 
   runreport:{k:'Run state · §9',i:'doc',io:['committed','the outcome'],h:`
     <p><strong>run-report.md</strong> is the actual outcome that confirms or corrects the Phase-1 build plan: the pinned SHA, the in-scope list, what built and what is blocked, prerequisites, and residue. It is a snapshot of one run, not a file anyone keeps up to date.</p>
-    <div class="ref">The three run-state files are committed. status.json is transient and git-ignored.</div>`},
+    <div class="ref">Four durable files are committed — build-plan.md, blackboard.md, dependency-graph.md, run-report.md. status.json and manifests/ are transient and git-ignored.</div>`},
 
   plangate:{k:'Human gate · §2.4, §10',i:'shield',io:['Phase 4','approval'],h:`
     <p>The plan approval gate. The skill stops and asks before any <code>gh workflow run … plan_only=true</code>. Nothing triggers the DR pipeline, not even a read-only plan, without an explicit yes.</p>
@@ -766,9 +767,9 @@ const SIM=[
   {t:'Phase 3 · Run state', nodes:['resolve','blackboard','depgraph','runreport','pipeline'], edges:[['resolve','blackboard'],['resolve','depgraph'],['resolve','runreport'],['resolve','pipeline']],
    cap:'The same script then writes the run down so a colleague, or a new session tomorrow, can pick it up: blackboard.md (the open questions still to be answered), dependency-graph.md (the map and the order), run-report.md (what actually got built, and what is blocked). It also rewrites the per-component job blocks inside the DR pipeline file from the computed order. That is the one write the Orchestrator is allowed to make outside a generated root, and it is reviewed in the same pull request.'},
   {t:'GitOps · Regenerate overlay', nodes:['p3','pg','gitops'], edges:[['p3','pg'],['pg','gitops']],
-   cap:'Terraform builds the infrastructure; a separate set of files tells the Kubernetes cluster what to run on it. gitops-rewrite.mjs makes the DR copy of those: it takes every platform component from the source GitOps tree the profile points at, copies them to the DR tree, and swaps every environment-specific value (region, key vault names, subnets, address ranges, ownership tags, paths) for its DR equivalent, using the same rules that built the Terraform estate. The production files are never touched; the DR copy is regenerated each run, so it cannot quietly drift out of date.'},
+   cap:'Terraform builds the infrastructure; a separate set of files tells the Kubernetes cluster what to run on it. gitops-rewrite.mjs makes the DR copy of those: it discovers every component under the source GitOps tree the profile points at, subtracts the pinned data-plane exclusions, copies the rest to the DR tree, and swaps every environment-specific value (region, resource names, subnets, address ranges, ownership tags, paths) for its DR equivalent, using the same rules that built the Terraform estate. The production files are never touched; the DR copy is regenerated each run, so it cannot quietly drift out of date.'},
   {t:'GitOps · Guard & residue', nodes:['gitops','gitopsdr'], edges:[['gitops','gitopsdr']],
-   cap:'Then it checks its own work. A search for any surviving production token fails the build outright. Anything it genuinely cannot know yet is marked instead of guessed: POST-APPLY placeholders for values that only exist once the DR cluster and disks are created, and one DECIDE item (the on-prem allow-list) that a human has to confirm. Both are settled in the skill, with a person present, before anything is committed.'},
+   cap:'Then it checks its own work. A search for any surviving production token fails the build outright. Anything it genuinely cannot know yet is marked instead of guessed: POST-APPLY placeholders for values that exist only once another root applies (a workload-identity client id, a resource id), and DECIDE items a human has to confirm (an allowlist, a DNS zone). Which ones exist is profile data, not a fixed list. Both classes are settled in the skill, with a person present, before anything is committed.'},
   {t:'Hand-off', nodes:['handoff'], edges:[['pg','handoff'],['handoff','p4']],
    cap:'Hand-off. The generated roots, manifests, apply order, and the GitOps overlay cross from the autonomous workflow back to the interactive main loop. From here every step touches the cloud and is gated.'},
   {t:'Isolation · why a wrong apply is safe', nodes:['isolation','pipeline'], edges:[['isolation','pipeline']],

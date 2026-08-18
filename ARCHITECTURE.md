@@ -196,9 +196,10 @@ SHA is **pinned on receipt** (§4) and the whole estate is built from it.
 
 1. **Fan-out generation = a `Workflow` script.** The committed `workflows/dr-build.js` *is* the Orchestrator:
    it spawns one **Component Builder** sub-agent per component (parallel, capped ~10), each
-   emitting a DR root + manifest, then runs the invariant lint + `terraform fmt/validate`. **No
-   cloud**, and no mid-run approval — the fan-out starts only after the engineer authorizes the
-   **build plan** (§8.1), then runs to completion deterministically.
+   emitting a DR root + manifest, then runs the two deterministic checks on every root — the
+   invariant lint and the manifest reconcile (§11). **No cloud**, and no mid-run approval — the
+   fan-out starts only after the engineer authorizes the **build plan** (§8.1), then runs to
+   completion deterministically.
 2. **Cloud steps (plan / apply / troubleshoot) = the main loop.** The Workflow cannot pause mid-run
    for an interactive approval, so the gated steps run interactively: `gh workflow run` → `gh run
    watch`/`view` → on failure spawn a **Plan Validator** to triage → route the fix to a Builder, or
@@ -208,7 +209,8 @@ SHA is **pinned on receipt** (§4) and the whole estate is built from it.
 
 The existing DR pipeline (`profile/repo-map.md`) runs every real plan/apply. Agents only
 **trigger** it (`gh workflow run`) and **read** results (`gh run view`/`watch`). The only local
-Terraform is Mode 1's `fmt`/`validate` — config-only, no backend, no cloud.
+Terraform is the `fmt`/`validate` pass the main loop runs on the generated roots once the fan-out
+returns (§8, `docs/build-procedure.md`) — config-only, no backend, no cloud.
 
 ### 2.4 Approval gates, concretely
 
