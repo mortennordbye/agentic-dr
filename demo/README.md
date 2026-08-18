@@ -23,19 +23,35 @@ estate one step at a time:
 ```bash
 bash demo/try.sh                 # → ~/agentic-dr-demo
 bash demo/try.sh /some/where     # or wherever you like
-bash demo/try.sh --yes           # set it up and print the commands, no prompts
+bash demo/try.sh --list          # print the whole walk and run nothing at all
+bash demo/try.sh --step 3        # just that one step, on the estate already set up
+bash demo/try.sh --yes           # no prompts: run every step that needs no human
 ```
+
+There are four steps: what a run **discovers** (five roots, three in scope), the **invariant lint**
+against a production root, the **GitOps rewriter** and its one deliberate non-change, and the
+**full build**. Each one prints its own title, why it matters, the command it runs and the takeaway,
+so a screenshot of a single step carries its own argument.
 
 It pauses before each step, which is the point when you are demonstrating this to a room: run the
 lint, talk over the output, press enter for the next one. Each prompt takes enter to run, `s` to
 skip, `q` to stop. The last step offers to launch Claude Code in the estate for a full build, and
 defaults to no, because that one spawns agents and takes minutes.
 
-With no terminal attached — piped, or under `--yes` — it sets the estate up, prints the commands and
-exits, so it stays usable from a script.
+`--list` needs no estate and touches nothing, so it is the fast way to read or edit the narration.
+`--step` reruns one step against the estate you already have, which is what you want when you are
+rehearsing a single point rather than the whole walk.
 
-It will not write into a directory that already has anything in it without asking, so a second run
-cannot quietly discard a build you wanted to keep.
+With no terminal attached — piped, or under `--yes` — nothing prompts: it sets the estate up, runs
+the three deterministic steps and prints the command for the fourth, so it stays usable from a
+script and gives you the output to capture.
+
+It will not write into a directory that already has anything in it without asking. Interactively the
+answer defaults to reusing it as it stands; `--reuse` says so up front, and `d` deletes and rebuilds.
+Either way a second run cannot quietly discard a build you wanted to keep.
+
+Colour is on when a terminal is watching and off otherwise; `--no-color` and `NO_COLOR` both turn it
+off explicitly.
 
 By hand it is the same four steps:
 
