@@ -31,7 +31,7 @@ Use it wherever the procedure below writes `<plugin-root>`.
 
 ## What is different from a failover
 
-- **GitOps sentinels stay unresolved.** The overlay + `state/gitops-report.md` *are* the artifact —
+- **GitOps sentinels stay unresolved.** The overlay + `<state-dir>/gitops-report.md` *are* the artifact —
   review the diff (`git diff --no-index <source_dir> <target_dir>`). `__DR_POST_APPLY__*` values do
   not exist until the producing roots apply, so do not deploy this overlay and do not hand-fill them.
   The failover skill carries the sentinel gate; here their presence is expected.

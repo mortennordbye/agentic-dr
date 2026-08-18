@@ -119,7 +119,7 @@ it** (recorded in `dependency-graph.md` — escalate, never auto-break), compute
 `blackboard.md` / `dependency-graph.md` / `run-report.md`, and regenerates the managed DR job region
 in the DR pipeline file. Its final **GitOps** phase regenerates the platform/core GitOps overlay
 into the profile's `target_dir` (`gitops-rewrite.mjs` + `profile/gitops-substitutions.json`) and
-writes `state/gitops-report.md`.
+writes `<state-dir>/gitops-report.md`.
 
 **On return:** read `run-report.md` and present it — it confirms/corrects the build plan. If any
 component shows a lint/reconcile failure, **re-invoke the Workflow** (it is resumable — only the
@@ -135,7 +135,7 @@ drift baseline.
 ### GitOps overlay (platform/core) — interactive residue (main loop)
 
 The Workflow's GitOps phase already did the mechanical work: copy + AUTO substitutions + the
-completeness guard, recorded in `state/gitops-report.md` and the returned `gitops` object. You own
+completeness guard, recorded in `<state-dir>/gitops-report.md` and the returned `gitops` object. You own
 the residue it can't decide autonomously:
 
 - **Completeness guard.** If `gitops.violations` is non-empty, a source infra token (a name prefix,

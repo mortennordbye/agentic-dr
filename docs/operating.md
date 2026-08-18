@@ -37,7 +37,7 @@ Environment's required-reviewers approve server-side).
 ## What happens in a run
 
 1. **Discover & build plan (you review).** It scans the source-root locations `profile/repo-map.md`
-   names, drops the `profile/scope-rules.md` exclusions, and writes `state/build-plan.md`: what **will** be
+   names, drops the `profile/scope-rules.md` exclusions, and writes `<state-dir>/build-plan.md`: what **will** be
    created, what **won't** (and why), and what is **manual work** (prerequisites, data restore,
    cutover). → **You approve, amend scope, or abort at this gate.** Nothing is generated before it.
 2. **Fan-out generation (automatic, no cloud).** One Builder per in-scope root writes a DR root into
