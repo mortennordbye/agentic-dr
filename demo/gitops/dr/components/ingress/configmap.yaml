@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: ingress-platform-config
-  namespace: platform
-data:
-  region: northeurope
-  resource-group: ctso-dr-prod-neu-aks-rg
-  cluster: ctso-dr-prod-neu-aks

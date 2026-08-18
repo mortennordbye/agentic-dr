@@ -69,7 +69,17 @@ terraform/
 ├── prod/vm                     IaaS, not lifted and shifted          EXCLUDED
 └── prod/kv                     pre-staged replication target         EXCLUDED
 gitops/prod/components/         platform manifests, regenerated into the DR overlay
+agentic-dr/profile/             the estate's half of the split — the only thing it brings
+dr/terraform/                   empty. The DR roots land here
+agentic-dr/state/               empty. Run artifacts land here
+gitops/dr/                      absent. The rewriter creates it
 ```
+
+**The output side ships empty on purpose.** Nothing under `dr/`, `agentic-dr/state/` or `gitops/dr/`
+is checked in, so everything you see after a run is something the run produced — and a `git status`
+in the estate is a readable inventory of exactly that. It also keeps `repo-map.md` honest: its
+*pre-staged / hand-authored DR roots* row is empty, and a root sitting in `dr/terraform/` that is not
+listed there is one the generator would overwrite.
 
 - **A real dependency chain.** `aks` reaches `connectivity/vnet` and `prod/law` through named `data`
   lookups: the cold-start problem in miniature, since neither resolves until its producer applies.
