@@ -456,6 +456,24 @@ else
   ok "the blueprint names no estate path — every one is a pointer to a profile row"
 fi
 
+# The same regression, one directory over: the run-state directory is the estate's to place
+# (`AGENTIC_DR_DIR` moves it), so a blueprint file must reference its contents as `<state-dir>/<file>`.
+# The check above could not see this — it lists the origin repo's paths, and `state/run-report.md` is
+# this framework's own name for its own file. Four such literals reached main before anyone read
+# carefully enough to notice.
+#
+# Only a backtick-quoted *file* reference is a violation. Naming the directory itself is how the
+# convention gets documented at all — `agentic-dr/state/` in build-procedure.md, the tree in §15 —
+# so the pattern requires a filename with an extension after the slash.
+state_literals="$(grep -rnE --exclude-dir=.git -- '`(agentic-dr/)?state/[A-Za-z0-9._-]+\.[a-z]+' \
+                  "${blueprint[@]}" 2>/dev/null || true)"
+if [[ -n "$state_literals" ]]; then
+  bad "a blueprint file names a state file by literal path instead of <state-dir>/"
+  printf '%s\n' "$state_literals" | head -8 | sed 's/^/      /'
+else
+  ok "the blueprint points at <state-dir>/, never a literal state path"
+fi
+
 # The engine must never resolve the profile relative to its own location: it ships in the plugin, the
 # profile ships in the consuming repo, and neither may assume where the other lives. Comments are
 # stripped first — gitops-rewrite.mjs explains in prose why it does NOT do this, and that explanation
