@@ -28,7 +28,9 @@ ASSUME_YES=0
 for arg in "$@"; do
   case "$arg" in
     -y|--yes) ASSUME_YES=1 ;;
-    -h|--help) sed -n '3,19p' -- "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    # Read to the end of the header block rather than to a pinned line number, which silently
+    # truncates the help the first time someone adds a paragraph above it.
+    -h|--help) awk 'NR>2 { if (!/^#/) exit; sub(/^# ?/, ""); print }' < "${BASH_SOURCE[0]}"; exit 0 ;;
     -*) printf 'try.sh: unknown option %s\n' "$arg" >&2; exit 1 ;;
     *) TARGET="$arg" ;;
   esac
@@ -101,6 +103,14 @@ mkdir -p -- "$TARGET"
 cp -R -- "$SRC"/. "$TARGET"/
 rm -f -- "$TARGET/try.sh"
 
+# A build run inside demo/ leaves transients behind: run state, and the provider binaries
+# `terraform init` drops into every generated root. They are git-ignored there, so they are easy to
+# leave lying around, and cp -R takes them regardless. Carried into a fresh estate they hand over a
+# half-built one — resolve.mjs reads a stale manifest as a component that is already built, and the
+# walk below then demonstrates the wrong thing.
+rm -rf -- "$TARGET/agentic-dr/state/manifests" "$TARGET/agentic-dr/state/build.lock"
+find "$TARGET" \( -name .terraform -o -name .terraform.lock.hcl \) -prune -exec rm -rf -- {} +
+
 cd -- "$TARGET" || die "could not enter $TARGET"
 git init -q
 git add -A
@@ -137,11 +147,15 @@ if step "1/3" "The invariant lint, against a production root" \
 fi
 
 if step "2/3" "The GitOps rewriter, and the diff that matters" \
-   "It regenerates the DR overlay from the production manifests. Watch the line that does
-  NOT change: the on-prem range is not a source-estate token, and a blind sweep would have
-  rewritten it."; then
+   "It regenerates the DR overlay from the production manifests — the whole tree, from
+  nothing. Watch the line that does NOT change: the on-prem range is not a source-estate
+  token, and a blind sweep would have rewritten it."; then
+  [[ -e gitops/dr ]] || printf '  %sgitops/dr does not exist yet.%s\n\n' "$DIM" "$R"
   node "$PLUGIN/engine/gitops-rewrite.mjs" >/dev/null
-  printf '  %s%s%s\n\n' "$DIM" "gitops/prod/components/ingress/values.yaml → gitops/dr/..." "$R"
+  printf '  %swritten:%s\n' "$DIM" "$R"
+  find gitops/dr -type f | sort | sed 's/^/    /'
+  printf '\n  %s%s%s\n' "$DIM" \
+         "gitops/prod/components/ingress/values.yaml → gitops/dr/components/ingress/values.yaml" "$R"
   diff -u gitops/prod/components/ingress/values.yaml \
           gitops/dr/components/ingress/values.yaml | tail -n +3 || true
 fi
