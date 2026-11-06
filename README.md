@@ -1,20 +1,17 @@
 <div align="center">
 
-<img src="assets/icon.png" alt="" width="84">
+<img src="assets/icon.svg" alt="" width="112" height="112">
 
 # Agentic DR
 
 ### Generate your disaster-recovery infrastructure on the day you need it, from the production code you already maintain.
 
-![Terraform](https://img.shields.io/badge/Terraform-844FBA?logo=terraform&logoColor=white) ![Azure](https://img.shields.io/badge/Azure-0078D4?logo=microsoftazure&logoColor=white) [![Claude Code](https://img.shields.io/badge/Claude%20Code-D97757?logo=anthropic&logoColor=white)](https://code.claude.com) ![Node.js](https://img.shields.io/badge/Node.js-5FA04E?logo=nodedotjs&logoColor=white) ![Bash](https://img.shields.io/badge/Bash-4EAA25?logo=gnubash&logoColor=white)
-
-[![CI](https://github.com/mortennordbye/agentic-dr/actions/workflows/ci.yml/badge.svg)](https://github.com/mortennordbye/agentic-dr/actions/workflows/ci.yml) [![Scorecard](https://api.securityscorecards.dev/projects/github.com/mortennordbye/agentic-dr/badge)](https://scorecard.dev/viewer/?uri=github.com/mortennordbye/agentic-dr)
-
-[![License](https://img.shields.io/github/license/mortennordbye/agentic-dr?style=flat-square)](LICENSE) [![Last Commit](https://img.shields.io/github/last-commit/mortennordbye/agentic-dr?style=flat-square)](https://github.com/mortennordbye/agentic-dr/commits/main) [![Stars](https://img.shields.io/github/stars/mortennordbye/agentic-dr?style=flat-square)](https://github.com/mortennordbye/agentic-dr/stargazers)
+![Terraform](https://img.shields.io/badge/Terraform-233f27?style=flat-square&logo=terraform&logoColor=white) ![Azure](https://img.shields.io/badge/Azure-233f27?style=flat-square&logo=microsoftazure&logoColor=white) [![Claude Code](https://img.shields.io/badge/Claude%20Code-233f27?style=flat-square&logo=anthropic&logoColor=white)](https://code.claude.com) ![Node.js](https://img.shields.io/badge/Node.js-233f27?style=flat-square&logo=nodedotjs&logoColor=white) ![Bash](https://img.shields.io/badge/Bash-233f27?style=flat-square&logo=gnubash&logoColor=white)<br>
+[![CI](https://img.shields.io/github/actions/workflow/status/mortennordbye/agentic-dr/ci.yml?branch=main&style=flat-square&labelColor=233f27&label=ci)](https://github.com/mortennordbye/agentic-dr/actions/workflows/ci.yml) [![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/mortennordbye/agentic-dr?style=flat-square&labelColor=233f27&label=openssf%20scorecard)](https://scorecard.dev/viewer/?uri=github.com/mortennordbye/agentic-dr)<br>
+[![License](https://img.shields.io/github/license/mortennordbye/agentic-dr?style=flat-square&labelColor=233f27&color=51a45e)](LICENSE) [![Last Commit](https://img.shields.io/github/last-commit/mortennordbye/agentic-dr?style=flat-square&labelColor=233f27&color=51a45e)](https://github.com/mortennordbye/agentic-dr/commits/main) [![Stars](https://img.shields.io/github/stars/mortennordbye/agentic-dr?style=flat-square&labelColor=233f27&color=51a45e)](https://github.com/mortennordbye/agentic-dr/stargazers)
 
 Most DR estates are a second copy of production, maintained by hand. That copy rots. Production
 changes, the DR copy does not, and you find out on DR day.
-
 </div>
 
 Agentic DR takes the other position: **do not maintain a standing DR pipeline — regenerate it on
